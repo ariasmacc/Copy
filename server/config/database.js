@@ -5,65 +5,48 @@ const fs = require('fs');
 
 // --- NEW MIGRATION FUNCTION ---
 function runMigrations(db) {
-  // Migration 1: Add two_fa_code
-  db.run(`
-    ALTER TABLE Users ADD COLUMN two_fa_code TEXT;
-  `, (err) => {
-    if (err && err.message && !err.message.includes("duplicate column name")) {
-      console.error("Migration Error (two_fa_code):", err.message);
-    } else if (!err) {
-      console.log("✅ Migration: Added two_fa_code column to Users.");
-    }
+  db.run(`ALTER TABLE Users ADD COLUMN two_fa_code TEXT;`, (err) => {
+    if (err && !err.message.includes("duplicate column name")) console.error("Migration Error:", err.message);
   });
-  
-  // Migration 2: Add two_fa_expires
-  db.run(`
-    ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME;
-  `, (err) => {
-    if (err && err.message && !err.message.includes("duplicate column name")) {
-      console.error("Migration Error (two_fa_expires):", err.message);
-    } else if (!err) {
-      console.log("✅ Migration: Added two_fa_expires column to Users.");
-    }
+  db.run(`ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME;`, (err) => {
+    if (err && !err.message.includes("duplicate column name")) console.error("Migration Error:", err.message);
   });
 }
-// -----------------------------
 
 console.log("--- DATABASE SETUP STARTED ---");
 
-// 1. Define the paths
 const CODE_DB_PATH = path.resolve(__dirname, '..', 'data', 'BRIGHTDatabase.db');
 const VOLUME_FOLDER = '/app/data'; 
 const VOLUME_DB_PATH = path.join(VOLUME_FOLDER, 'BRIGHTDatabase.db');
 
 let dbPath;
-
-// 2. Check if we are running on Railway using NODE_ENV
 const isRailway = process.env.NODE_ENV === 'production';
 
 if (isRailway || fs.existsSync(VOLUME_FOLDER)) {
     console.log("✅ Volume/Production environment detected.");
+    if (!fs.existsSync(VOLUME_FOLDER)) fs.mkdirSync(VOLUME_FOLDER, { recursive: true });
 
-    // Ensure volume folder exists
-    if (!fs.existsSync(VOLUME_FOLDER)) {
-        fs.mkdirSync(VOLUME_FOLDER, { recursive: true });
+    let isDbValid = false;
+    if (fs.existsSync(VOLUME_DB_PATH)) {
+        const stats = fs.statSync(VOLUME_DB_PATH);
+        if (stats.size > 5000) isDbValid = true; 
     }
 
-    // --- SAFE LOGIC: Only copy if missing ---
-    if (!fs.existsSync(VOLUME_DB_PATH)) {
-        console.log("⚠️ Database NOT found in Volume. Seeding from code...");
+    if (!isDbValid) {
+        console.log("⚠️ Volume DB is missing or EMPTY! Forcing copy from code...");
         if (fs.existsSync(CODE_DB_PATH)) {
             try {
                 fs.copyFileSync(CODE_DB_PATH, VOLUME_DB_PATH);
-                console.log("✅ SUCCESS: Copied initial database to Volume.");
+                console.log("✅ SUCCESS: Overwrite empty Volume DB with actual database.");
             } catch (err) {
                 console.error("❌ ERROR: Failed to copy database file:", err);
             }
+        } else {
+            console.error("❌ ERROR: Hindi mahanap ang database sa VS Code. Did you push it?");
         }
     } else {
-        console.log("✅ Existing database found in Volume. Using it.");
+        console.log("✅ Valid database found in Volume. Using it.");
     }
-    // ----------------------------------------
 
     dbPath = VOLUME_DB_PATH;
 } else {
@@ -78,13 +61,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
     console.error('❌ FATAL ERROR opening database:', err.message);
   } else {
     console.log('✅ Connected to SQLite database.');
-    db.exec('PRAGMA foreign_keys = ON;', (err) => {
-      if (err) console.error("Could not enable foreign keys:", err.message);
-    });
-    
-    // --- CRITICAL: RUN MIGRATIONS HERE ---
+    db.exec('PRAGMA foreign_keys = ON;', () => {});
     runMigrations(db); 
-    // -------------------------------------
   }
 });
 
