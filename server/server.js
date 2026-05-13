@@ -110,8 +110,8 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // --- Middleware ---
 const corsOptions = {
-   origin: 'http://localhost:5173', 
-   credentials: true,               
+   origin: true, // ✅ Ito ang magic word! Ibig sabihin: "Payagan lahat ng origins (Railway links)"
+   credentials: true, 
 };
 app.use(cors(corsOptions));
 
