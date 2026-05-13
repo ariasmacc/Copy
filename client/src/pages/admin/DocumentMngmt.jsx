@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const DocumentMngmt = () => {
   // 1. Point this to your Backend Port
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
   
   const [allDocuments, setAllDocuments] = useState([]);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
@@ -59,7 +59,7 @@ const DocumentMngmt = () => {
   // FIXED ACTION HANDLER
   // ==========================================
   const handleAction = (action, doc) => {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
     
     if (action === 'view') {
       // Keep "View" pointing to the static folder to open in a new tab

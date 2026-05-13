@@ -25,7 +25,7 @@ ChartJS.register(
 );
 
 const AdminOverview = () => {
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
   const [summary, setSummary] = useState({
     totalBudget: 0,

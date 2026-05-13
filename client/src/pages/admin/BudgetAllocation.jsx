@@ -8,7 +8,7 @@ const BudgetAllocation = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // --- FIXED: Added the full backend URL ---
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
   const loadAllocations = async () => {
     try {

@@ -11,7 +11,7 @@ const TransactionLedger = () => {
   const [isTypeOpen, setIsTypeOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
-  const API_BASE_URL = '/api/transactions';
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transactions`;
 
     useEffect(() => {
     const fetchTransactions = async () => {
