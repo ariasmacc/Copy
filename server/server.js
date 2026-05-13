@@ -135,8 +135,13 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 const corsOptions = {
   origin: true,
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
 };
 app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 
 app.use(express.json());
