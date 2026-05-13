@@ -49,7 +49,17 @@ const Login = () => {
             sessionStorage.setItem('tempRole', role);
             
             // 🟢 INAYOS ANG BACKTICKS DITO PARA HINDI MAG-SYNTAX ERROR
-            navigate(`/auth/verify-otp?userId=${data.userId}`);
+          if (data.requires2FA) {
+          navigate(`/auth/verify-otp?userId=${data.userId}`);
+        } else {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          localStorage.setItem('token', data.token);
+          if (data.user.role === 'Admin') {
+            navigate('/admin/overview');
+          } else {
+            navigate('/validator/overview');
+          }
+        }
             
         } else {
             setErrorMsg(data.error || data.msg || 'Invalid credentials. Please try again.');
