@@ -2,85 +2,145 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
-// --- NEW MIGRATION FUNCTION ---
+/**
+ * Run database migrations safely.
+ */
 function runMigrations(db) {
-  // Migration 1: Add two_fa_code
-  db.run(`
-    ALTER TABLE Users ADD COLUMN two_fa_code TEXT;
-  `, (err) => {
-    // Ignore the error if the column already exists ("duplicate column name")
-    if (err && err.message && !err.message.includes("duplicate column name")) {
-      console.error("Migration Error (two_fa_code):", err.message);
-    } else if (!err) {
-      console.log("✅ Migration: Added two_fa_code column to Users.");
+  console.log('🔄 Running database migrations...');
+
+  const migrations = [
+    {
+      name: 'two_fa_code',
+      sql: `ALTER TABLE Users ADD COLUMN two_fa_code TEXT`
+    },
+    {
+      name: 'two_fa_expires',
+      sql: `ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME`
+    },
+    {
+      name: 'reset_token',
+      sql: `ALTER TABLE Users ADD COLUMN reset_token VARCHAR(255)`
+    },
+    {
+      name: 'reset_token_expires',
+      sql: `ALTER TABLE Users ADD COLUMN reset_token_expires DATETIME`
     }
-  });
-  
-  // Migration 2: Add two_fa_expires
-  db.run(`
-    ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME;
-  `, (err) => {
-    // Ignore the error if the column already exists ("duplicate column name")
-    if (err && err.message && !err.message.includes("duplicate column name")) {
-      console.error("Migration Error (two_fa_expires):", err.message);
-    } else if (!err) {
-      console.log("✅ Migration: Added two_fa_expires column to Users.");
-    }
+  ];
+
+  db.serialize(() => {
+    migrations.forEach((migration) => {
+      db.run(migration.sql, (err) => {
+        if (err) {
+          // Ignore if the column already exists
+          if (
+            err.message.includes('duplicate column name') ||
+            err.message.includes('already exists')
+          ) {
+            console.log(`ℹ️ ${migration.name} column already exists.`);
+          } else {
+            console.error(
+              `❌ Migration Error (${migration.name}):`,
+              err.message
+            );
+          }
+        } else {
+          console.log(`✅ Migration: Added ${migration.name} column.`);
+        }
+      });
+    });
   });
 }
-// -----------------------------
 
-// 1. Define the paths
-const CODE_DB_PATH = path.resolve(__dirname, '..', 'data', 'BRIGHTDatabase.db'); 
-const VOLUME_FOLDER = '/app/data'; 
-const VOLUME_DB_PATH = path.join(VOLUME_FOLDER, 'BRIGHTDatabase.db'); 
+// =====================================================
+// Database Paths
+// =====================================================
+
+const CODE_DB_PATH = path.resolve(
+  __dirname,
+  '..',
+  'data',
+  'BRIGHTDatabase.db'
+);
+
+const VOLUME_FOLDER = '/app/data';
+const VOLUME_DB_PATH = path.join(VOLUME_FOLDER, 'BRIGHTDatabase.db');
 
 let dbPath;
 
-console.log("--- DATABASE SETUP STARTED ---");
+console.log('--- DATABASE SETUP STARTED ---');
 
-// 2. Check if we are running on Railway
+// =====================================================
+// Detect Railway Production Environment
+// =====================================================
+
 if (fs.existsSync(VOLUME_FOLDER)) {
-    console.log("✅ Volume folder found. Running in Production/Railway.");
+  console.log('✅ Volume folder found. Running in Production/Railway.');
 
-    // --- SAFE LOGIC: Only copy if missing ---
-    if (!fs.existsSync(VOLUME_DB_PATH)) {
-        console.log("⚠️ Database NOT found in Volume. Seeding from code...");
-        if (fs.existsSync(CODE_DB_PATH)) {
-            try {
-                fs.copyFileSync(CODE_DB_PATH, VOLUME_DB_PATH);
-                console.log("✅ SUCCESS: Copied initial database to Volume.");
-            } catch (err) {
-                console.error("❌ ERROR: Failed to copy database file:", err);
-            }
-        }
+  // Seed database only if it does not exist yet
+  if (!fs.existsSync(VOLUME_DB_PATH)) {
+    console.log('⚠️ Database NOT found in Volume. Seeding from code...');
+
+    if (fs.existsSync(CODE_DB_PATH)) {
+      try {
+        fs.copyFileSync(CODE_DB_PATH, VOLUME_DB_PATH);
+        console.log('✅ SUCCESS: Copied initial database to Volume.');
+      } catch (err) {
+        console.error('❌ ERROR: Failed to copy database file:', err.message);
+      }
     } else {
-        console.log("✅ Existing database found in Volume. Using it.");
+      console.warn(
+        '⚠️ Source database file not found. SQLite will create a new one.'
+      );
     }
-    // ----------------------------------------
+  } else {
+    console.log('✅ Existing database found in Volume. Using it.');
+  }
 
-    dbPath = VOLUME_DB_PATH;
-
+  dbPath = VOLUME_DB_PATH;
 } else {
-    console.log("ℹ️ Volume folder NOT found. Using local file.");
-    dbPath = CODE_DB_PATH;
+  console.log('ℹ️ Volume folder NOT found. Using local database file.');
+
+  // Ensure local data folder exists
+  const localFolder = path.dirname(CODE_DB_PATH);
+  if (!fs.existsSync(localFolder)) {
+    fs.mkdirSync(localFolder, { recursive: true });
+  }
+
+  dbPath = CODE_DB_PATH;
 }
 
-console.log("Final Database Path:", dbPath);
+console.log('Final Database Path:', dbPath);
+
+// =====================================================
+// Open Database
+// =====================================================
 
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('❌ FATAL ERROR opening database:', err.message);
-  } else {
-    console.log('✅ Connected to SQLite database.');
-    db.exec('PRAGMA foreign_keys = ON;', (err) => {
-      if (err) console.error("Could not enable foreign keys:", err.message);
-    });
-    
-    // --- CRITICAL: RUN MIGRATIONS HERE ---
-    runMigrations(db); 
-    // -------------------------------------
+    return;
   }
+
+  console.log('✅ Connected to SQLite database.');
+
+  db.serialize(() => {
+    // Enable foreign keys
+    db.run('PRAGMA foreign_keys = ON;', (pragmaErr) => {
+      if (pragmaErr) {
+        console.error(
+          '❌ Could not enable foreign keys:',
+          pragmaErr.message
+        );
+      }
+    });
+
+    // Run migrations
+    runMigrations(db);
+  });
 });
+
+// =====================================================
+// Export Database
+// =====================================================
 
 module.exports = db;
