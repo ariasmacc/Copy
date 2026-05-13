@@ -7,7 +7,6 @@ client/node_modules/
 .env.local
 
 # Databases (Prevent overwriting your local DB on GitHub)
-*.db
 *.sqlite
 
 # Build folders
