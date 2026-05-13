@@ -22,5 +22,3 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-!server/data/BRIGHTDatabase.db
-!data/BRIGHTDatabase.db
