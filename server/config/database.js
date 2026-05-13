@@ -37,7 +37,7 @@ if (isRailway || fs.existsSync(VOLUME_FOLDER)) {
         if (fs.existsSync(CODE_DB_PATH)) {
             try {
                 fs.copyFileSync(CODE_DB_PATH, VOLUME_DB_PATH);
-                console.log("✅ SUCCESS: Overwrite empty Volume DB with actual database.");
+                console.log("✅ SUCCESS: Overwrote empty Volume DB with actual database.");
             } catch (err) {
                 console.error("❌ ERROR: Failed to copy database file:", err);
             }
