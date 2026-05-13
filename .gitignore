@@ -1,0 +1,24 @@
+# Node modules (The heaviest folders)
+node_modules/
+client/node_modules/
+
+# Environment variables and sensitive data
+.env
+.env.local
+
+# Databases (Prevent overwriting your local DB on GitHub)
+*.db
+*.sqlite
+
+# Build folders
+dist/
+client/dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS specific files
+.DS_Store
+Thumbs.db

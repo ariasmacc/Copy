@@ -1,0 +1,84 @@
+
+================================================================
+RECORD TYPE : BUDGET
+TIMESTAMP   : 2026-05-09T13:09:02.247Z
+RECORD ID   : BGT-2026-4761
+DB HASH     : 472b88d6eee7a0959b2b4028eed85af7a0d2a6c5de7cecd92668b2df166c2162
+----------------------------------------------------------------
+SECRET RAW STRING:
+{"block":1,"id":"BGT-2026-4761","name":"Testing","category":"eventsandactivities","amount":99.96,"desc":"For testing","justification":"For testing","submitter":1,"priority":"Normal","timestamp":"2026-05-09T13:09:02.245Z","prevHash":"0000000000000000000000000000000000000000000000000000000000000000"}
+----------------------------------------------------------------
+================================================================
+
+
+================================================================
+RECORD TYPE : BUDGET
+TIMESTAMP   : 2026-05-09T13:26:25.114Z
+RECORD ID   : BGT-2026-9481
+DB HASH     : 5c055759297fd5833fa95a51bd519996fef35a8e5522269f23c987e74c250691
+----------------------------------------------------------------
+SECRET RAW STRING:
+{"block":1,"id":"BGT-2026-9481","name":"Testing","category":"eventsandactivities","amount":99.97,"desc":"For testing","justification":"For testing","submitter":1,"priority":"Normal","timestamp":"2026-05-09T13:26:25.112Z","prevHash":"0000000000000000000000000000000000000000000000000000000000000000"}
+----------------------------------------------------------------
+================================================================
+
+
+================================================================
+RECORD TYPE : BUDGET
+TIMESTAMP   : 2026-05-09T13:48:48.935Z
+RECORD ID   : BGT-2026-3564
+DB HASH     : 33937d217ca3b6c599f1c1ea0b84248bb5f2bb3822359450368bb09c89a2e068
+----------------------------------------------------------------
+SECRET RAW STRING:
+{"block":2,"id":"BGT-2026-3564","name":"Testing1","category":"travelandconferences","amount":100,"desc":"For testing purposes","justification":"For testing purposes","submitter":1,"priority":"Normal","timestamp":"2026-05-09T13:48:48.934Z","prevHash":"5c055759297fd5833fa95a51bd519996fef35a8e5522269f23c987e74c250691"}
+----------------------------------------------------------------
+================================================================
+
+
+================================================================
+RECORD TYPE : EXPENSE
+TIMESTAMP   : 2026-05-10T09:51:44.362Z
+RECORD ID   : EXP-2026-5024
+DB HASH     : 79a8b1c3fd02b776ef30d2093675fdbc8b94338c08ca4ebaf416fc21dae9e086
+----------------------------------------------------------------
+SECRET RAW STRING:
+{"block":3,"id":"EXP-2026-5024","name":"Testing Record Expenses","budgetId":"BGT-2026-9481","category":"1","amount":"50","date":"2026-05-10","vendor":"C's store","desc":"Materials: colored paper & glue","receipt":"102020","submitter":1,"timestamp":"2026-05-10T09:51:44.357Z","prevHash":"33937d217ca3b6c599f1c1ea0b84248bb5f2bb3822359450368bb09c89a2e068"}
+----------------------------------------------------------------
+================================================================
+
+
+================================================================
+RECORD TYPE : EXPENSE
+TIMESTAMP   : 2026-05-10T09:52:57.182Z
+RECORD ID   : EXP-2026-9066
+DB HASH     : 59a90ba180283a53a3ee07bc1a828223c6cc8e9ec5af682bd7e18ac0511b3ea7
+----------------------------------------------------------------
+SECRET RAW STRING:
+{"block":4,"id":"EXP-2026-9066","name":"Testing with documents","budgetId":"BGT-2026-9481","category":"1","amount":"10","date":"2026-05-10","vendor":"D's Store","desc":"For testing","receipt":"112233","submitter":1,"timestamp":"2026-05-10T09:52:57.175Z","prevHash":"79a8b1c3fd02b776ef30d2093675fdbc8b94338c08ca4ebaf416fc21dae9e086"}
+----------------------------------------------------------------
+================================================================
+
+
+================================================================
+RECORD TYPE : BUDGET
+TIMESTAMP   : 2026-05-12T05:10:07.056Z
+RECORD ID   : BGT-2026-8230
+DB HASH     : b1ae9dd5669f7e68401ed9f00699f59a6b1f2877156b99928ee7f16dec8a3f27
+----------------------------------------------------------------
+SECRET RAW STRING:
+{"block":5,"id":"BGT-2026-8230","name":"Lechon","category":"eventsandactivities","amount":8000,"desc":"nagugutom na mga prof, need palakihin tyan","justification":"para tumaba yung mga prof","submitter":3,"priority":"Normal","timestamp":"2026-05-12T05:10:07.052Z","prevHash":"59a90ba180283a53a3ee07bc1a828223c6cc8e9ec5af682bd7e18ac0511b3ea7"}
+----------------------------------------------------------------
+================================================================
+
+
+================================================================
+RECORD TYPE : EXPENSE
+TIMESTAMP   : 2026-05-12T05:25:46.324Z
+RECORD ID   : EXP-2026-4609
+DB HASH     : b5b08d0902d2929873c6b17e9ca3a4f5302509f7dca783a6dd9f07d7621b2038
+----------------------------------------------------------------
+SECRET RAW STRING:
+{"block":6,"id":"EXP-2026-4609","name":"Team Building","budgetId":"BGT-2026-8230","category":"2","amount":"5678","date":"2026-05-15","vendor":"NANAy's Lechon","desc":"masaya siya","receipt":"09ndgd638jkda","submitter":3,"timestamp":"2026-05-12T05:25:46.311Z","prevHash":"b1ae9dd5669f7e68401ed9f00699f59a6b1f2877156b99928ee7f16dec8a3f27"}
+----------------------------------------------------------------
+================================================================
+
