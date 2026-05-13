@@ -1,6 +1,4 @@
 // 1. First, we import the path module
-require('dns').setDefaultResultOrder('ipv4first');
-
 const path = require('path');
 
 // 2. Now that 'path' is defined, we can safely use it to find your .env
@@ -124,19 +122,18 @@ app.use(cookieParser());
 console.log("Checking Env:", process.env.EMAIL_USER ? "✅ User Found" : "❌ User Missing");
 console.log("Checking Env:", process.env.EMAIL_PASS ? "✅ Pass Found" : "❌ Pass Missing");
 
-// --- UPDATE TRANSPORTER SECTION ---
+// --- EMAIL TRANSPORTER (port 587, no service override) ---
 const transporter = nodemailer.createTransport({
    host: 'smtp.gmail.com',
-   port: 465,         // Secure port
-   secure: true,      // Must be true for 465
+   port: 587,
+   secure: false,
    auth: {
        user: process.env.EMAIL_USER,
        pass: process.env.EMAIL_PASS
    },
-   // Add timeouts to prevent "hanging" connections in the cloud
-   connectionTimeout: 10000, 
-   greetingTimeout: 10000,
-   socketTimeout: 10000
+   tls: {
+       rejectUnauthorized: false
+   }
 });
 
 transporter.verify((error, success) => {
