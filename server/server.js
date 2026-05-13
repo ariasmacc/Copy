@@ -411,6 +411,18 @@ app.post('/secret-upload-test', uploadMiddleware, (req, res) => {
    `);
 });
 
+const clientBuildPath = path.resolve(__dirname, '..', 'client', 'dist');
+
+app.use(express.static(clientBuildPath));
+
+app.get('*', (req, res) => {
+    const indexPath = path.join(clientBuildPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.status(404).send("Buhay ang server, pero hindi pa tapos mag-build ang React frontend! Paki-hintay lang sa Railway.");
+    }
+});
 // --- Start Server ---
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
