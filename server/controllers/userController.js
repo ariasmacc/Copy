@@ -392,48 +392,36 @@ exports.verify2fa = (req, res) => {
              return res.status(401).json({ error: 'Invalid or expired 2FA code.' });
         }
 
-        // Code is correct and not expired: FINAL LOGIN SUCCESS!
-        const payload = {
-          userId: user.user_id,
-          username: user.username,
-          role: user.role,
-          name: user.full_name 
-        };
-        
-        if (!JWT_SECRET) {
-            console.error('FATAL ERROR: JWT_SECRET is not defined in .env');
-            // Clear the 2FA code even if it failed here
-            User.clearTwoFACode(user.user_id, () => {}); 
-            return res.status(500).json({ error: 'Server configuration error.' });
-        }
-
-        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
-
-        // Set the token as a secure, httpOnly cookie.
-          res.cookie('token', token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-            maxAge: 3600000
-          });
-
-        // Clear the 2FA code from the database immediately
-        User.clearTwoFACode(user.user_id, () => {}); 
-
-        console.log(`User ${user.username} successfully verified 2FA.`);
-
-        // Send user info back to frontend
-        res.json({
-          message: 'Login successful!',
-          token: token,
-          user: {
-              id: user.user_id,
-              name: user.full_name,
+                    // Code is correct and not expired: FINAL LOGIN SUCCESS!
+            // 2FA TEMPORARILY DISABLED
+            const payload = {
+              userId: user.user_id,
               username: user.username,
               role: user.role,
-              email: user.email,
-              position: user.position || 'Staff'
-          }
-        });
+              name: user.full_name
+            };
+
+            const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
+
+            res.cookie('token', token, {
+              httpOnly: true,
+              secure: true,
+              sameSite: 'none',
+              maxAge: 3600000
+            });
+
+            return res.json({
+              message: 'Login successful!',
+              token: token,
+              userId: user.user_id,
+              user: {
+                id: user.user_id,
+                name: user.full_name,
+                username: user.username,
+                role: user.role,
+                email: user.email,
+                position: user.position || 'Staff'
+              }
+            });
     });
 };
