@@ -8,49 +8,61 @@ const fs = require('fs');
 function runMigrations(db) {
   console.log('🔄 Running database migrations...');
 
-  const migrations = [
-    {
-      name: 'two_fa_code',
-      sql: `ALTER TABLE Users ADD COLUMN two_fa_code TEXT`
-    },
-    {
-      name: 'two_fa_expires',
-      sql: `ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME`
-    },
-    {
-      name: 'reset_token',
-      sql: `ALTER TABLE Users ADD COLUMN reset_token VARCHAR(255)`
-    },
-    {
-      name: 'reset_token_expires',
-      sql: `ALTER TABLE Users ADD COLUMN reset_token_expires DATETIME`
-    }
-  ];
+  // Check if Users table exists first
+  db.get(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name='Users'`,
+    (err, row) => {
+      if (err) {
+        console.error('❌ Error checking Users table:', err.message);
+        return;
+      }
 
-  db.serialize(() => {
-    migrations.forEach((migration) => {
-      db.run(migration.sql, (err) => {
-        if (err) {
-          // Ignore if the column already exists
-          if (
-            err.message.includes('duplicate column name') ||
-            err.message.includes('already exists')
-          ) {
-            console.log(`ℹ️ ${migration.name} column already exists.`);
-          } else {
-            console.error(
-              `❌ Migration Error (${migration.name}):`,
-              err.message
-            );
-          }
-        } else {
-          console.log(`✅ Migration: Added ${migration.name} column.`);
+      if (!row) {
+        console.log('⚠️ Users table does not exist yet. Skipping migrations.');
+        return;
+      }
+
+      const migrations = [
+        {
+          name: 'two_fa_code',
+          sql: `ALTER TABLE Users ADD COLUMN two_fa_code TEXT`
+        },
+        {
+          name: 'two_fa_expires',
+          sql: `ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME`
+        },
+        {
+          name: 'reset_token',
+          sql: `ALTER TABLE Users ADD COLUMN reset_token VARCHAR(255)`
+        },
+        {
+          name: 'reset_token_expires',
+          sql: `ALTER TABLE Users ADD COLUMN reset_token_expires DATETIME`
         }
-      });
-    });
-  });
-}
+      ];
 
+      migrations.forEach((migration) => {
+        db.run(migration.sql, (err) => {
+          if (err) {
+            if (
+              err.message.includes('duplicate column name') ||
+              err.message.includes('already exists')
+            ) {
+              console.log(`ℹ️ ${migration.name} column already exists.`);
+            } else {
+              console.error(
+                `❌ Migration Error (${migration.name}):`,
+                err.message
+              );
+            }
+          } else {
+            console.log(`✅ Migration: Added ${migration.name} column.`);
+          }
+        });
+      });
+    }
+  );
+}
 // =====================================================
 // Database Paths
 // =====================================================
