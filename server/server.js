@@ -110,8 +110,9 @@ const overview = require('./routes/overview');
 const categoryRoutes = require('./routes/categoryRoutes');
 
 
+// --- Initialization ---
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;//binago ko sana tama na siya whhhwdn
 
 
 // --- UPLOAD CONFIGURATION (FIXED) ---
@@ -132,16 +133,12 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 
 // --- Middleware ---
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
+// REPLACE the old app.use(cors()) with this:
+const corsOptions = {
+   origin: 'http://localhost:5173', // Your React Dev Port
+   credentials: true,               // REQUIRED: Allows cookies to be sent back and forth
+};
+app.use(cors(corsOptions));
 
 
 app.use(express.json());
@@ -159,39 +156,26 @@ console.log("EMAIL_USER exists:", process.env.EMAIL_USER ? "✅ YES" : "❌ NO")
 console.log("EMAIL_PASS exists:", process.env.EMAIL_PASS ? "✅ YES" : "❌ NO");
 
 
-// --- EMAIL CONFIGURATION ---
 const transporter = nodemailer.createTransport({
    service: 'gmail',
+   host: 'smtp.gmail.com', // Explicitly setting the host can help
+   port: 465,
+   secure: true,
    auth: {
        user: process.env.EMAIL_USER,
        pass: process.env.EMAIL_PASS
    }
 });
 
-transporter.sendMail = function(mailOptions, callback) {
-    console.log("\n=========================================");
-    console.log("🔔 [MOCK EMAIL] OTP INTERCEPTED!");
-    console.log("📩 To:", mailOptions.to);
-    console.log("📝 Subject:", mailOptions.subject);
-    console.log("🔑 Message / OTP:\n", mailOptions.text || mailOptions.html);
-    console.log("=========================================\n");
 
-    const info = { messageId: 'mock-id-12345', accepted: [mailOptions.to] };
-
-    if (callback) {
-        return callback(null, info);
-    }
-    return Promise.resolve(info);
-};
-
-
-transporter.verify = function(callback) {
-    console.log("✅ Email verification bypassed for Railway.");
-    if (callback) return callback(null, true);
-    return Promise.resolve(true);
-};
-
-app.set('transporter', transporter);
+// Verify connection configuration
+transporter.verify((error, success) => {
+   if (error) {
+       console.error("❌ Email Transporter Error:", error);
+   } else {
+       console.log("✅ Gmail Server is ready to send OTPs!");
+   }
+});
 
 
 app.set('transporter', transporter);
@@ -322,6 +306,12 @@ db.serialize(() => {
 syncUploadsToVolume();
 
 
+// --- Start Server ---
+app.listen(PORT, () => {
+ console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+
 // --- DEBUGGING ROUTE (Delete this later) ---
 app.get('/secret-file-check', (req, res) => {
    const fs = require('fs');
@@ -393,6 +383,7 @@ app.post('/secret-upload-test', uploadMiddleware, (req, res) => {
    const file = req.files[0];
    const webPath = '/uploads/' + file.filename;
 
+
    res.send(`
        <html>
            <body style="font-family: sans-serif; padding: 50px; text-align: center;">
@@ -411,19 +402,3 @@ app.post('/secret-upload-test', uploadMiddleware, (req, res) => {
    `);
 });
 
-const clientBuildPath = path.resolve(__dirname, '..', 'client', 'dist');
-
-app.use(express.static(clientBuildPath));
-
-app.get('*', (req, res) => {
-    const indexPath = path.join(clientBuildPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        res.status(404).send("Buhay ang server, pero hindi pa tapos mag-build ang React frontend! Paki-hintay lang sa Railway.");
-    }
-});
-// --- Start Server ---
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
