@@ -72,7 +72,7 @@ const Signup = () => {
         <div className="signup-info-panel">
           <div className="signup-logo">
             <a href="/" style={{ display: 'block', lineHeight: 0 }}>   
-              <img src={brightLogo} alt="BRIGHT Logo" style={{ height: '80px', width: 'auto', display: 'block' }} />git add . 
+              <img src={brightLogo} alt="BRIGHT Logo" style={{ height: '80px', width: 'auto', display: 'block' }} />
             </a> 
             <h1 style={{ marginTop: 0, marginBottom: 0, lineHeight: 1, fontSize: '1.5em', color: 'white' }}>BRIGHT</h1>
           </div>
