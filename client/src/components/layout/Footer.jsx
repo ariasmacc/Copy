@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import brightLogo from '../../assets/bright-logo-v3.png';
 
 const Footer = () => {
   const [activeModal, setActiveModal] = useState(null);
@@ -23,7 +24,7 @@ const Footer = () => {
       <div className="footer-links">
         {/* HINDI KO NA NI-TOUCH YUNG LOGO PARA HINDI MASIRA */}
         <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo(0, 0); }} className="footer-logo">
-          <img src="/src/assets/bright-logo-v3.png" alt="BRIGHT" />
+          <img src={brightLogo} alt="BRIGHT" />
           <span>BRIGHT</span>
         </a>
 

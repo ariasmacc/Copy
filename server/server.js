@@ -133,7 +133,7 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // --- Middleware ---
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: true,
   credentials: true,
 };
 app.use(cors(corsOptions));
