@@ -380,11 +380,6 @@ app.post('/secret-upload-test', uploadMiddleware, (req, res) => {
    const file = req.files[0];
    const webPath = '/uploads/' + file.filename;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
-
-
    res.send(`
        <html>
            <body style="font-family: sans-serif; padding: 50px; text-align: center;">
@@ -403,3 +398,7 @@ app.listen(PORT, () => {
    `);
 });
 
+// --- Start Server ---
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
