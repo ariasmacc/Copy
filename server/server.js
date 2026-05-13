@@ -122,28 +122,27 @@ app.use(cookieParser());
 console.log("Checking Env:", process.env.EMAIL_USER ? "✅ User Found" : "❌ User Missing");
 console.log("Checking Env:", process.env.EMAIL_PASS ? "✅ Pass Found" : "❌ Pass Missing");
 
+// --- EMAIL TRANSPORTER (port 587, no service override) ---
 const transporter = nodemailer.createTransport({
-   host: 'smtp.gmail.com', 
-   port: 465, 
-   secure: true,
+   host: 'smtp.gmail.com',
+   port: 587,
+   secure: false,
    auth: {
        user: process.env.EMAIL_USER,
        pass: process.env.EMAIL_PASS
    },
    tls: {
-       rejectUnauthorized: false 
+       rejectUnauthorized: false
    }
 });
 
 transporter.verify((error, success) => {
    if (error) {
-       console.error("❌ Email Transporter Error:", error);
+       console.error("❌ Email Transporter Error:", error.message);
    } else {
        console.log("✅ Gmail Server is ready to send OTPs!");
    }
 });
-
-app.set('transporter', transporter);
 
 app.set('transporter', transporter);
 
