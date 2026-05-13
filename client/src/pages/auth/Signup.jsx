@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import '../../index.css';
 import { Link, useNavigate } from 'react-router-dom'; 
+import brightLogo from '../../assets/bright-logo-v3.png';
 
 const Signup = () => {
   const navigate = useNavigate(); // Added to route the user correctly after signup
@@ -31,7 +32,8 @@ const Signup = () => {
 
     try {
       // 1. Send the actual request to the backend
-      const response = await fetch('/api/users/signup', {
+      const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
+      const response = await fetch(`${API_BASE_URL}/users/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +72,7 @@ const Signup = () => {
         <div className="signup-info-panel">
           <div className="signup-logo">
             <a href="/" style={{ display: 'block', lineHeight: 0 }}>   
-              <img src="/src/assets/bright-logo-v3.png" alt="BRIGHT Logo" style={{ height: '80px', width: 'auto', display: 'block' }} /> 
+              <img src={brightLogo} alt="BRIGHT Logo" style={{ height: '80px', width: 'auto', display: 'block' }} />git add . 
             </a> 
             <h1 style={{ marginTop: 0, marginBottom: 0, lineHeight: 1, fontSize: '1.5em', color: 'white' }}>BRIGHT</h1>
           </div>

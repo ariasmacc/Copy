@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import brightLogo from '../../assets/bright-logo-v3.png';
 
 const OTPVerification = () => {
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -233,7 +234,7 @@ const OTPVerification = () => {
             <div className="signup-page-container">
                 <div className="signup-info-panel">
                     <div className="signup-logo">
-                        <img src="/src/assets/bright-logo-v3.png" alt="BRIGHT Logo" />
+                        <img src={brightLogo} alt="BRIGHT Logo" style={{ height: '80px', width: 'auto', display: 'block' }} />
                         <h1>BRIGHT</h1>
                     </div>
                     <div className="login-info">

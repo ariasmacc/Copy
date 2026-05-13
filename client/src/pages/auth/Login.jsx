@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; 
 import '../../index.css'; 
+import brightLogo from '../../assets/bright-logo-v3.png';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -101,7 +102,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
         <div className="signup-info-panel">
           <div className="signup-logo">
             <Link to="/welcome" style={{ display: 'block', lineHeight: 0 }}>   
-              <img src="/src/assets/bright-logo-v3.png" alt="BRIGHT Logo" style={{ height: '80px', width: 'auto', display: 'block' }} /> 
+              <img src={brightLogo} alt="BRIGHT Logo" style={{ height: '80px', width: 'auto', display: 'block' }} /> 
             </Link> 
             <h1 style={{ marginTop: 0, marginBottom: 0, lineHeight: 1, fontSize: '1.5em', color: 'white' }}>BRIGHT</h1>
           </div>
