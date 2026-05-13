@@ -410,11 +410,12 @@ exports.verify2fa = (req, res) => {
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
 
         // Set the token as a secure, httpOnly cookie.
-        res.cookie('token', token, {
-          httpOnly: true, 
-          secure: process.env.NODE_ENV === 'production', 
-          maxAge: 3600000 
-        });
+          res.cookie('token', token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            maxAge: 3600000
+          });
 
         // Clear the 2FA code from the database immediately
         User.clearTwoFACode(user.user_id, () => {}); 
