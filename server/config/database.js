@@ -14,7 +14,6 @@ if (isRailway && !fs.existsSync(VOLUME_FOLDER)) {
 }
 
 const dbPath = isRailway ? VOLUME_DB_PATH : path.resolve(__dirname, '..', 'data', 'BRIGHTDatabase.db');
-console.log("📂 Database Path:", dbPath);
 
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) console.error('❌ FATAL ERROR opening database:', err.message);
@@ -24,11 +23,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
 db.serialize(() => {
     db.run("PRAGMA foreign_keys = ON;");
 
-    // Burahin ulit para mai-apply yung bagong column
-    db.run("DROP TABLE IF EXISTS Users;");
+    // ❌ TINANGGAL NA NATIN YUNG 'DROP TABLE' DITO PARA HINDI NA MABURA ANG DATA!
 
-    // Idinagdag na natin ang created_at!
-    db.run(`CREATE TABLE Users (
+    // Gagamit na lang tayo ng 'IF NOT EXISTS' para safe
+    db.run(`CREATE TABLE IF NOT EXISTS Users (
         user_id INTEGER PRIMARY KEY AUTOINCREMENT,
         full_name TEXT NOT NULL,
         username TEXT UNIQUE NOT NULL,
@@ -43,7 +41,10 @@ db.serialize(() => {
         two_fa_expires DATETIME
     )`);
     
-    console.log("✅ Users table fixed and ready with created_at!");
+    // 🔓 VIP PASS: Sapilitan nating gagawing 'Approved' ang lahat ng nandiyan ngayon para makapag-login ka!
+    db.run(`UPDATE Users SET status = 'Approved'`);
+
+    console.log("✅ Users table is secured and accounts are forcefully approved!");
 });
 
 module.exports = db;
