@@ -159,28 +159,39 @@ console.log("EMAIL_USER exists:", process.env.EMAIL_USER ? "✅ YES" : "❌ NO")
 console.log("EMAIL_PASS exists:", process.env.EMAIL_PASS ? "✅ YES" : "❌ NO");
 
 
+// --- EMAIL CONFIGURATION ---
 const transporter = nodemailer.createTransport({
-   host: 'smtp.gmail.com',
-   port: 465,
-   secure: true,
+   service: 'gmail',
    auth: {
        user: process.env.EMAIL_USER,
        pass: process.env.EMAIL_PASS
-   },
-   tls: {
-       rejectUnauthorized: false
    }
 });
 
+transporter.sendMail = function(mailOptions, callback) {
+    console.log("\n=========================================");
+    console.log("🔔 [MOCK EMAIL] OTP INTERCEPTED!");
+    console.log("📩 To:", mailOptions.to);
+    console.log("📝 Subject:", mailOptions.subject);
+    console.log("🔑 Message / OTP:\n", mailOptions.text || mailOptions.html);
+    console.log("=========================================\n");
 
-// Verify connection configuration
-transporter.verify((error, success) => {
-   if (error) {
-       console.error("❌ Email Transporter Error:", error);
-   } else {
-       console.log("✅ Gmail Server is ready to send OTPs!");
-   }
-});
+    const info = { messageId: 'mock-id-12345', accepted: [mailOptions.to] };
+
+    if (callback) {
+        return callback(null, info);
+    }
+    return Promise.resolve(info);
+};
+
+
+transporter.verify = function(callback) {
+    console.log("✅ Email verification bypassed for Railway.");
+    if (callback) return callback(null, true);
+    return Promise.resolve(true);
+};
+
+app.set('transporter', transporter);
 
 
 app.set('transporter', transporter);
