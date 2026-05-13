@@ -18,7 +18,7 @@ const Login = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [modalSuccess, setModalSuccess] = useState('');
 
-  const API_BASE_URL = 'https://bright-final-deploy-production.up.railway.app/api'; 
+  const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();

@@ -32,7 +32,7 @@ const Signup = () => {
 
     try {
       // 1. Send the actual request to the backend
-      const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'https://bright-final-deploy-production.up.railway.app/'}/api`;
+      const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
       const response = await fetch(`${API_BASE_URL}/users/signup`, {
         method: 'POST',
         headers: {

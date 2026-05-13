@@ -5,8 +5,7 @@ const UserMngmnt = () => {
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // PALITAN ANG API_BASE_URL SA LAHAT NG FRONTEND FILES (Signup, Login, UserMngmnt):
-    const API_BASE_URL = 'https://bright-final-deploy-production.up.railway.app/api';   
+    const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
     const getAuthHeaders = () => {
         const token = localStorage.getItem('token');
