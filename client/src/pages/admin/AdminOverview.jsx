@@ -25,7 +25,7 @@ ChartJS.register(
 );
 
 const AdminOverview = () => {
-  const API_BASE_URL = '/api';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const [summary, setSummary] = useState({
     totalBudget: 0,
@@ -48,7 +48,7 @@ const AdminOverview = () => {
   const loadSummaryData = async () => {
     try {
       // FIX 1: Added { credentials: 'include' } to send the JWT cookie
-      const res = await fetch(`http://localhost:3000${API_BASE_URL}/overview/summary`, {
+      const res = await fetch(`${API_BASE_URL}/overview/summary`, {
         credentials: 'include'
       });
       const data = await res.json();
@@ -71,7 +71,7 @@ const AdminOverview = () => {
   const loadRecentTransactions = async () => {
     try {
       // FIX 1: Added { credentials: 'include' }
-      const res = await fetch(`http://localhost:3000${API_BASE_URL}/transactions`, {
+      const res = await fetch(`${API_BASE_URL}/transactions`, {
         credentials: 'include'
       });
       const data = await res.json();
@@ -91,8 +91,8 @@ const AdminOverview = () => {
     try {
       // FIX 1: Added { credentials: 'include' } to both requests
       const [utilRes, trendRes] = await Promise.all([
-        fetch(`http://localhost:3000${API_BASE_URL}/overview/utilization`, { credentials: 'include' }),
-        fetch(`http://localhost:3000${API_BASE_URL}/overview/spending-trend`, { credentials: 'include' })
+        fetch(`${API_BASE_URL}/overview/utilization`, { credentials: 'include' }),
+        fetch(`${API_BASE_URL}/overview/spending-trend`, { credentials: 'include' })
       ]);
 
       if (utilRes.ok) {

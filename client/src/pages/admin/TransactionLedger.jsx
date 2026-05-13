@@ -11,7 +11,6 @@ const TransactionLedger = () => {
   const [isTypeOpen, setIsTypeOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
-  const BACKEND_URL = 'http://localhost:3000';
   const API_BASE_URL = '/api/transactions';
 
     useEffect(() => {
@@ -136,7 +135,7 @@ const TransactionLedger = () => {
                   </div>
                 )}
               </div>
-              <button type="button" className="btn-secondary" onClick={() => window.location.href = `${BACKEND_URL}${API_BASE_URL}/export`}>
+              <button type="button" className="btn-secondary" onClick={() => window.location.href = `${API_BASE_URL}/export`}>
                 Export CSV
               </button>
             </div>

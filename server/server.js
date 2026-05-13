@@ -133,10 +133,9 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 
 // --- Middleware ---
-// REPLACE the old app.use(cors()) with this:
 const corsOptions = {
-   origin: 'http://localhost:5173', // Your React Dev Port
-   credentials: true,               // REQUIRED: Allows cookies to be sent back and forth
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  credentials: true,
 };
 app.use(cors(corsOptions));
 
@@ -304,12 +303,6 @@ db.serialize(() => {
 
 // --- EXECUTE RESCUE OPERATION ---
 syncUploadsToVolume();
-
-
-// --- Start Server ---
-app.listen(PORT, () => {
- console.log(`Server is running on http://localhost:${PORT}`);
-});
 
 
 // --- DEBUGGING ROUTE (Delete this later) ---

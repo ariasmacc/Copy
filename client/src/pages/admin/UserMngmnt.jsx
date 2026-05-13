@@ -5,7 +5,6 @@ const UserMngmnt = () => {
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const BACKEND_URL = 'http://localhost:3000';
     const API_BASE_URL = '/api/users';
 
     useEffect(() => {
@@ -44,7 +43,7 @@ const UserMngmnt = () => {
     const loadUserRequests = async () => {
         try {
             // FIX: Added BACKEND_URL and credentials
-            const response = await fetch(`${BACKEND_URL}${API_BASE_URL}/requests`, {
+            const response = await fetch(`${API_BASE_URL}/requests`, {
                 credentials: 'include'
             });
             if (!response.ok) throw new Error('Failed to fetch requests');
@@ -60,7 +59,7 @@ const UserMngmnt = () => {
 
         try {
             // FIX: Added BACKEND_URL and credentials
-            const response = await fetch(`${BACKEND_URL}${API_BASE_URL}/status/${userId}`, {
+            const response = await fetch(`${API_BASE_URL}/status/${userId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include', // <-- THIS IS CRITICAL

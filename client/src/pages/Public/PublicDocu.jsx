@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import '../../index.css';
 
 const PublicDocu = () => {
-  // 1. Point to your Backend Port
-  const BACKEND_URL = 'http://localhost:3000';
   const API_BASE_URL = '/api/public/documents'; // Match your documents.js route
   
   const [documents, setDocuments] = useState([]);
@@ -39,7 +37,7 @@ const PublicDocu = () => {
       window.open(`${BACKEND_URL}${doc.file_path}`, '_blank');
     } else if (action === 'download') {
       // Triggers our secure backend download route
-      window.location.href = `${BACKEND_URL}${API_BASE_URL}/download/${doc.file_name}`;
+      window.location.href = `${API_BASE_URL}/download/${doc.file_name}`;
     }
   };
 

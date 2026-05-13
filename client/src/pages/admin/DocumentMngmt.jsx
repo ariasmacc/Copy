@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const DocumentMngmt = () => {
   // 1. Point this to your Backend Port
-  const BACKEND_URL = 'http://localhost:3000';
-  const API_BASE_URL = '/api';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
   
   const [allDocuments, setAllDocuments] = useState([]);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
@@ -23,7 +22,7 @@ const DocumentMngmt = () => {
 
   const loadDocuments = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}${API_BASE_URL}/documents`, {
+      const res = await fetch(`${API_BASE_URL}/documents`, {
         credentials: 'include'
       });
       
@@ -60,7 +59,7 @@ const DocumentMngmt = () => {
   // FIXED ACTION HANDLER
   // ==========================================
   const handleAction = (action, doc) => {
-    const BACKEND_URL = 'http://localhost:3000';
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     
     if (action === 'view') {
       // Keep "View" pointing to the static folder to open in a new tab
