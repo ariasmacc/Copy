@@ -24,10 +24,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
 db.serialize(() => {
     db.run("PRAGMA foreign_keys = ON;");
 
-    // 1. Burahin muna natin yung maling table na ginawa natin kanina
+    // Burahin ulit para mai-apply yung bagong column
     db.run("DROP TABLE IF EXISTS Users;");
 
-    // 2. Buuin ulit nang may tamang 'password_hash' column!
+    // Idinagdag na natin ang created_at!
     db.run(`CREATE TABLE Users (
         user_id INTEGER PRIMARY KEY AUTOINCREMENT,
         full_name TEXT NOT NULL,
@@ -38,11 +38,12 @@ db.serialize(() => {
         password_hash TEXT NOT NULL, 
         status TEXT DEFAULT 'Pending',
         requested_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
         two_fa_code TEXT,
         two_fa_expires DATETIME
     )`);
     
-    console.log("✅ Users table fixed and ready with password_hash!");
+    console.log("✅ Users table fixed and ready with created_at!");
 });
 
 module.exports = db;
