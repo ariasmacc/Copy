@@ -98,7 +98,7 @@ exports.login = (req, res) => {
             </div>
           `
           
-        }).catch(emailErr => console.error("OTP Email failed:", emailErr));
+        }).catch(emailErr => console.log(`🔑 OTP for ${user.username}: ${otp}`));
 
         // 6. Tell the frontend to switch to the OTP screen
         return res.json({
