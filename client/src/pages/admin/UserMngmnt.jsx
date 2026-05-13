@@ -5,7 +5,7 @@ const UserMngmnt = () => {
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const API_BASE_URL = '/api/users';
+    const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users`;
 
     useEffect(() => {
         const link = document.createElement('link');
@@ -25,8 +25,8 @@ const UserMngmnt = () => {
     const loadSummaryData = async () => {
         try {
             // FIX: Added BACKEND_URL and credentials
-            const response = await fetch(`${BACKEND_URL}${API_BASE_URL}/summary`, {
-                credentials: 'include'
+            const response = await fetch(`${API_BASE_URL}/summary`, {
+            credentials: 'include'
             });
             if (!response.ok) throw new Error('Failed to fetch summary');
             const data = await response.json();
