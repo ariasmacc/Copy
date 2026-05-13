@@ -110,9 +110,8 @@ const overview = require('./routes/overview');
 const categoryRoutes = require('./routes/categoryRoutes');
 
 
-// --- Initialization ---
+const app = express();
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 // --- UPLOAD CONFIGURATION (FIXED) ---
