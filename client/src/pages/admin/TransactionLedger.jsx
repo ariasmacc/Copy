@@ -7,19 +7,27 @@ const TransactionLedger = () => {
   const [typeFilter, setTypeFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   
-  // UI State for dropdowns
   const [isTypeOpen, setIsTypeOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
-  const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/transactions`;
+  const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_BASE_URL = `${BACKEND_URL}/api/transactions`;
 
-    useEffect(() => {
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+  };
+
+  useEffect(() => {
     const fetchTransactions = async () => {
       try {
         setIsLoading(true);
-        // FIX: Added credentials: 'include' to pass the JWT cookie
-        const res = await fetch(`${BACKEND_URL}${API_BASE_URL}`, {
-          credentials: 'include' 
+        const res = await fetch(`${API_BASE_URL}`, {
+          credentials: 'include',
+          headers: getAuthHeaders()
         });
         
         if (!res.ok) throw new Error(`Failed to fetch transactions: ${res.statusText}`);
@@ -150,6 +158,8 @@ const TransactionLedger = () => {
             <tbody>
               {isLoading ? (
                 <tr><td colSpan="8">Loading transactions...</td></tr>
+              ) : filteredTransactions.length === 0 ? (
+                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>No transactions found.</td></tr>
               ) : filteredTransactions.map((tx, idx) => (
                 <tr key={tx.transaction_id || idx}>
                   <td>{tx.block_number ? `#${tx.block_number}` : 'N/A'}</td>
