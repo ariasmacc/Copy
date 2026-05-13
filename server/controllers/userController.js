@@ -72,6 +72,8 @@ exports.login = (req, res) => {
         .slice(0, 19)
         .replace('T', ' ');
 
+        
+
       // 4. Save to Database
       User.saveTwoFACode(user.user_id, hashedCode, expires, (dbErr) => {
         if (dbErr) {
@@ -95,6 +97,7 @@ exports.login = (req, res) => {
               <p style="color: #7f8c8d; font-size: 12px;">If you didn't try to log in, please secure your account.</p>
             </div>
           `
+          
         }).catch(emailErr => console.error("OTP Email failed:", emailErr));
 
         // 6. Tell the frontend to switch to the OTP screen
