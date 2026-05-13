@@ -5,7 +5,8 @@ const UserMngmnt = () => {
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
+    // FIX: Ginawang relative path para 100% working sa Railway
+    const API_BASE_URL = '/api';
 
     useEffect(() => {
         const link = document.createElement('link');
@@ -24,8 +25,8 @@ const UserMngmnt = () => {
 
     const loadSummaryData = async () => {
         try {
-            // FIX: Added BACKEND_URL and credentials
-            const response = await fetch(`${API_BASE_URL}/summary`, {
+            // FIX: Dinagdagan ng /users
+            const response = await fetch(`${API_BASE_URL}/users/summary`, {
             credentials: 'include'
             });
             if (!response.ok) throw new Error('Failed to fetch summary');
@@ -42,8 +43,8 @@ const UserMngmnt = () => {
 
     const loadUserRequests = async () => {
         try {
-            // FIX: Added BACKEND_URL and credentials
-            const response = await fetch(`${API_BASE_URL}/requests`, {
+            // FIX: Dinagdagan ng /users
+            const response = await fetch(`${API_BASE_URL}/users/requests`, {
                 credentials: 'include'
             });
             if (!response.ok) throw new Error('Failed to fetch requests');
@@ -58,11 +59,11 @@ const UserMngmnt = () => {
         if (!window.confirm(`Are you sure you want to ${newStatus} this user?`)) return;
 
         try {
-            // FIX: Added BACKEND_URL and credentials
-            const response = await fetch(`${API_BASE_URL}/status/${userId}`, {
+            // FIX: Dinagdagan ng /users
+            const response = await fetch(`${API_BASE_URL}/users/status/${userId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // <-- THIS IS CRITICAL
+                credentials: 'include', 
                 body: JSON.stringify({ newStatus })
             });
 
