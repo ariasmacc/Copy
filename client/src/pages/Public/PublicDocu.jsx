@@ -17,7 +17,7 @@ const PublicDocu = () => {
     setIsLoading(true);
     try {
       // Added BACKEND_URL. No 'auth' needed here as it's a public route
-      const res = await fetch(`${BACKEND_URL}${API_BASE_URL}`);
+      const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
       if (!res.ok) throw new Error('Failed to fetch documents');
       
       const data = await res.json();

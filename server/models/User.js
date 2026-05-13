@@ -60,7 +60,6 @@ const User = {
     });
   },
 
-  // --- MGA BAGONG FUNCTIONS PARA SA USER MANAGEMENT ---
 
   // Para kunin lahat ng user para sa table
   getAllRequests: (callback) => {

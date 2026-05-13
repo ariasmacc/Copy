@@ -70,7 +70,6 @@ const OTPVerification = () => {
         setMessage({ text: '', type: 'info' });
 
         try {
-            // 🟢 INAYOS YUNG BACKTICKS (`) PARA HINDI MAG-SYNTAX ERROR
             const response = await fetch(`${API_BASE_URL}/users/verify-2fa`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
