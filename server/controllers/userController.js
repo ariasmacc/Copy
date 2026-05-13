@@ -425,6 +425,7 @@ exports.verify2fa = (req, res) => {
         // Send user info back to frontend
         res.json({
           message: 'Login successful!',
+          token: token,
           user: {
               id: user.user_id,
               name: user.full_name,
