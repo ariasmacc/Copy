@@ -24,18 +24,15 @@ let dbPath;
 
 if (fs.existsSync(VOLUME_FOLDER)) {
     console.log("✅ Volume folder found. Running in Production/Railway.");
-    if (!fs.existsSync(VOLUME_DB_PATH)) {
-        console.log("⚠️ Database NOT found in Volume. Seeding from code...");
-        if (fs.existsSync(CODE_DB_PATH)) {
-            try {
-                fs.copyFileSync(CODE_DB_PATH, VOLUME_DB_PATH);
-                console.log("✅ SUCCESS: Copied initial database to Volume.");
-            } catch (err) {
-                console.error("❌ ERROR: Failed to copy database file:", err);
-            }
+    
+    // ALWAYS copy fresh database from code
+    if (fs.existsSync(CODE_DB_PATH)) {
+        try {
+            fs.copyFileSync(CODE_DB_PATH, VOLUME_DB_PATH);
+            console.log("✅ SUCCESS: Fresh database copied to Volume.");
+        } catch (err) {
+            console.error("❌ ERROR: Failed to copy database file:", err);
         }
-    } else {
-        console.log("✅ Existing database found in Volume. Using it.");
     }
     dbPath = VOLUME_DB_PATH;
 } else {
