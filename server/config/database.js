@@ -19,7 +19,7 @@ const CODE_DB_PATH = path.resolve(__dirname, '..', 'data', 'BRIGHTDatabase.db');
 const VOLUME_FOLDER = '/app/data'; 
 const VOLUME_DB_PATH = path.join(VOLUME_FOLDER, 'BRIGHTDatabase.db');
 const VERSION_FILE = path.join(VOLUME_FOLDER, '.db_version');
-const CURRENT_VERSION = '2';
+const CURRENT_VERSION = '3';
 
 let dbPath;
 
