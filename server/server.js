@@ -217,41 +217,11 @@ app.get('/admin/download-db', auth, checkRole('Admin'), (req, res) => {
 // --- DATABASE MIGRATIONS ---
 const db = require('./config/database');
 
-// --- DATABASE MIGRATIONS ---
-const db = require('./config/database');
-
 db.serialize(() => {
    db.run("ALTER TABLE Users ADD COLUMN two_fa_code TEXT", () => {});
    db.run("ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME", () => {});
    db.run("ALTER TABLE Users ADD COLUMN reset_token TEXT", () => {});
    db.run("ALTER TABLE Users ADD COLUMN reset_token_expires DATETIME", () => {});
-
-   // --- TEMPORARY FIX FOR SEAdmin ---
-   db.run(`
-      UPDATE Users
-      SET role = 'Admin',
-          status = 'approved'
-      WHERE username = 'SEAdmin'
-   `, function(err) {
-      if (err) {
-         console.error("❌ SEAdmin Fix Error:", err.message);
-      } else {
-         console.log(`✅ SEAdmin fixed. Updated ${this.changes} row(s).`);
-      }
-   });
-
-   // Show current SEAdmin record in logs
-   db.get(`
-      SELECT username, role, status
-      FROM Users
-      WHERE username = 'SEAdmin'
-   `, (err, row) => {
-      if (err) {
-         console.error("❌ SEAdmin Check Error:", err.message);
-      } else {
-         console.log("🔍 SEAdmin Record:", row);
-      }
-   });
 });
 
 // --- EXECUTE RESCUE OPERATION ---
