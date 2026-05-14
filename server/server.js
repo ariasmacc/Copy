@@ -14,7 +14,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const fs = require('fs');
 
-// --- [UPDATED] FILE RESCUE OPERATION (Database + Uploads) ---
+// --- FILE RESCUE OPERATION (Database + Uploads) ---
 function syncUploadsToVolume() {
    console.log("🔄 Starting File Rescue Operation...");
   
@@ -99,6 +99,7 @@ if (!fs.existsSync(UPLOAD_DIR)) {
    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
+// --- SERVE STATIC FILES EARLY ---
 app.use('/uploads', express.static(UPLOAD_DIR));
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
@@ -122,11 +123,12 @@ app.use(cookieParser());
 console.log("Checking Env:", process.env.EMAIL_USER ? "✅ User Found" : "❌ User Missing");
 console.log("Checking Env:", process.env.EMAIL_PASS ? "✅ Pass Found" : "❌ Pass Missing");
 
-// --- EMAIL TRANSPORTER (port 587, no service override) ---
+// --- EMAIL TRANSPORTER ---
 const transporter = nodemailer.createTransport({
    host: 'smtp.gmail.com',
    port: 587,
    secure: false,
+   family: 4, // Force IPv4 to fix Railway issues
    auth: {
        user: process.env.EMAIL_USER,
        pass: process.env.EMAIL_PASS
@@ -146,10 +148,198 @@ transporter.verify((error, success) => {
 
 app.set('transporter', transporter);
 
-// --- API Routes ---
-app.use('/api/public/overview', overview);
-app.use('/api/public/transactions', transaction);
-app.use('/api/public/documents', documents);
+// ============================================================
+// PUBLIC API ROUTES (No Authentication Required)
+// MUST be defined BEFORE authenticated routes
+// ============================================================
+
+// --- PUBLIC OVERVIEW ROUTES ---
+
+// Get budget summary
+app.get('/api/public/overview/summary', (req, res) => {
+  const db = require('./config/database');
+  
+  const query = `
+    SELECT 
+      COALESCE(SUM(CASE WHEN type = 'Allocation' AND status = 'Approved' THEN amount ELSE 0 END), 0) as totalBudget,
+      COALESCE(SUM(CASE WHEN type = 'Expense' AND status = 'Approved' THEN amount ELSE 0 END), 0) as totalSpent
+    FROM transactions
+  `;
+  
+  db.get(query, [], (err, row) => {
+    if (err) {
+      console.error('Public summary error:', err);
+      return res.status(500).json({ error: 'Database error', details: err.message });
+    }
+    res.json(row || { totalBudget: 0, totalSpent: 0 });
+  });
+});
+
+// Get budget utilization by category
+app.get('/api/public/overview/utilization', (req, res) => {
+  const db = require('./config/database');
+  
+  const query = `
+    SELECT 
+      COALESCE(category, 'Uncategorized') as category,
+      COALESCE(SUM(CASE WHEN type = 'Allocation' AND status = 'Approved' THEN amount ELSE 0 END), 0) as totalAllocated,
+      COALESCE(SUM(CASE WHEN type = 'Expense' AND status = 'Approved' THEN amount ELSE 0 END), 0) as totalSpent
+    FROM transactions
+    WHERE status = 'Approved'
+    GROUP BY category
+    ORDER BY category
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Public utilization error:', err);
+      return res.status(500).json({ error: 'Database error', details: err.message });
+    }
+    res.json(rows || []);
+  });
+});
+
+// Get monthly spending trend
+app.get('/api/public/overview/spending-trend', (req, res) => {
+  const db = require('./config/database');
+  
+  const query = `
+    SELECT 
+      strftime('%Y-%m', timestamp) as month,
+      COALESCE(SUM(amount), 0) as totalSpent
+    FROM transactions
+    WHERE type = 'Expense' 
+      AND status = 'Approved'
+      AND timestamp >= datetime('now', '-6 months')
+    GROUP BY strftime('%Y-%m', timestamp)
+    ORDER BY month ASC
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Public trend error:', err);
+      return res.status(500).json({ error: 'Database error', details: err.message });
+    }
+    res.json(rows || []);
+  });
+});
+
+// --- PUBLIC TRANSACTIONS ROUTES ---
+
+// Get all public transactions
+app.get('/api/public/transactions', (req, res) => {
+  const db = require('./config/database');
+  
+  const query = `
+    SELECT 
+      t.*,
+      (SELECT COUNT(*) FROM validation v WHERE v.transaction_id = t.transaction_id) as validations
+    FROM transactions t
+    WHERE t.status = 'Approved'
+    ORDER BY t.timestamp DESC
+    LIMIT 100
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Public transactions error:', err);
+      return res.status(500).json({ error: 'Database error', details: err.message });
+    }
+    res.json(rows || []);
+  });
+});
+
+// Export public transactions to CSV
+app.get('/api/public/transactions/export', (req, res) => {
+  const db = require('./config/database');
+  
+  const query = `
+    SELECT 
+      transaction_id, type, category, amount, name_or_vendor,
+      initiated_by, status, timestamp, hash, block_number
+    FROM transactions
+    WHERE status = 'Approved'
+    ORDER BY timestamp DESC
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Public export error:', err);
+      return res.status(500).json({ error: 'Database error', details: err.message });
+    }
+    
+    // Generate CSV
+    const headers = ['Transaction ID', 'Type', 'Category', 'Amount', 'Description', 'Initiated By', 'Status', 'Date', 'Hash', 'Block'];
+    let csv = headers.join(',') + '\n';
+    
+    rows.forEach(row => {
+      csv += [
+        row.transaction_id || '',
+        row.type || '',
+        row.category || '',
+        row.amount || 0,
+        `"${(row.name_or_vendor || '').replace(/"/g, '""')}"`,
+        row.initiated_by || '',
+        row.status || '',
+        row.timestamp || '',
+        row.hash || '',
+        row.block_number || ''
+      ].join(',') + '\n';
+    });
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=public_transactions.csv');
+    res.send(csv);
+  });
+});
+
+// --- PUBLIC DOCUMENTS ROUTES ---
+
+// Get all public documents
+app.get('/api/public/documents', (req, res) => {
+  const db = require('./config/database');
+  
+  const query = `
+    SELECT 
+      id, file_name, file_path, type, size, description,
+      related_transaction, category, uploaded_by, date, status, hash
+    FROM documents
+    WHERE status = 'Approved' OR status = 'Verified'
+    ORDER BY date DESC
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      console.error('Public documents error:', err);
+      return res.status(500).json({ error: 'Database error', details: err.message });
+    }
+    res.json(rows || []);
+  });
+});
+
+// Download public document
+app.get('/api/public/documents/download/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(UPLOAD_DIR, filename);
+  
+  console.log('Download request for:', filename);
+  console.log('Looking in:', filePath);
+  
+  if (fs.existsSync(filePath)) {
+    res.download(filePath, filename, (err) => {
+      if (err) {
+        console.error('Download error:', err);
+        res.status(500).json({ error: 'Download failed' });
+      }
+    });
+  } else {
+    res.status(404).json({ error: 'File not found', path: filePath });
+  }
+});
+
+// ============================================================
+// AUTHENTICATED API ROUTES (Require Login)
+// ============================================================
 
 app.use('/api/budget', auth, checkRole('Admin', 'Validator'), budget);
 app.use('/api/expenses', auth, checkRole('Admin', 'Validator'), expenses);
@@ -239,21 +429,69 @@ app.post('/secret-upload-test', uploadMiddleware, (req, res) => {
    res.send(`<h1 style="color: green;">✅ Upload Successful!</h1><p>File: <b>${req.files[0].filename}</b></p>`);
 });
 
-// --- SERVE REACT FRONTEND ---
+// ============================================================
+// DEBUG ROUTE (Remove in production)
+// ============================================================
+app.get('/api/debug', (req, res) => {
+  const database = require('./config/database');
+  
+  database.get("SELECT COUNT(*) as count FROM transactions", [], (err, txRow) => {
+    if (err) {
+      return res.json({ error: err.message });
+    }
+    
+    database.get("SELECT COUNT(*) as count FROM documents", [], (err2, docRow) => {
+      if (err2) {
+        return res.json({ error: err2.message, transactions: txRow });
+      }
+      
+      database.get("SELECT COUNT(*) as count FROM Users", [], (err3, userRow) => {
+        res.json({
+          success: true,
+          database: 'Connected',
+          tables: {
+            transactions: txRow?.count || 0,
+            documents: docRow?.count || 0,
+            users: userRow?.count || 0
+          },
+          uploads: {
+            path: UPLOAD_DIR,
+            exists: fs.existsSync(UPLOAD_DIR),
+            files: fs.existsSync(UPLOAD_DIR) ? fs.readdirSync(UPLOAD_DIR).length : 0
+          }
+        });
+      });
+    });
+  });
+});
+
+// ============================================================
+// SERVE REACT FRONTEND (MUST BE LAST)
+// ============================================================
 const clientBuildPath = path.resolve(__dirname, '..', 'client', 'dist');
 
 app.use(express.static(clientBuildPath));
 
 app.get('*', (req, res) => {
-    const indexPath = path.join(clientBuildPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
+    // Only serve index.html for non-API routes
+    if (!req.path.startsWith('/api/') && !req.path.startsWith('/admin/') && !req.path.startsWith('/uploads/')) {
+        const indexPath = path.join(clientBuildPath, 'index.html');
+        if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+        } else {
+            res.status(404).send(`<div style="font-family: sans-serif; padding: 40px; text-align: center;"><h2>Backend is running! 🚀</h2><p>Frontend build not found yet. Please run: npm run build in the client folder</p></div>`);
+        }
     } else {
-        res.status(404).send(`<div style="font-family: sans-serif; padding: 40px; text-align: center;"><h2>Backend is running! 🚀</h2><p>Frontend build not found yet.</p></div>`);
+        res.status(404).json({ error: 'Route not found' });
     }
 });
 
 // --- Start Server ---
 app.listen(PORT, () => {
- console.log(`Server is running on port ${PORT}`);
+ console.log(`\n========================================`);
+ console.log(`✅ Server is running on port ${PORT}`);
+ console.log(`📁 Uploads directory: ${UPLOAD_DIR}`);
+ console.log(`🌐 Public API: http://localhost:${PORT}/api/public`);
+ console.log(`🔍 Debug endpoint: http://localhost:${PORT}/api/debug`);
+ console.log(`========================================\n`);
 });

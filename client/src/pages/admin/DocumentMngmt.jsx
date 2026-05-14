@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
 const DocumentMngmt = () => {
-  // 1. Point this to your Backend Port
   const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
   const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -10,6 +9,7 @@ const DocumentMngmt = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [user, setUser] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const userString = localStorage.getItem('user');
@@ -23,18 +23,31 @@ const DocumentMngmt = () => {
 
   const loadDocuments = async () => {
     try {
+      setError(null);
       const res = await fetch(`${API_BASE_URL}/documents`, {
         credentials: 'include'
       });
 
-      if (!res.ok) throw new Error('Failed to fetch documents');
-      const data = await res.json();
+      // Check content-type before parsing JSON
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await res.text();
+        console.error('Non-JSON response from server:', text);
+        throw new Error(`Server returned non-JSON response (HTTP ${res.status}). Check your API URL and authentication.`);
+      }
 
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || `HTTP error ${res.status}`);
+      }
+
+      const data = await res.json();
       const documentsArray = Array.isArray(data) ? data : [];
       setAllDocuments(documentsArray);
       setFilteredDocuments(documentsArray);
     } catch (err) {
       console.error('Error loading documents:', err);
+      setError(err.message);
       setAllDocuments([]);
       setFilteredDocuments([]);
     }
@@ -56,20 +69,12 @@ const DocumentMngmt = () => {
     setFilteredDocuments(filtered);
   }, [searchTerm, activeFilter, allDocuments]);
 
-  // ==========================================
-  // FIXED ACTION HANDLER
-  // ==========================================
   const handleAction = (action, doc) => {
     if (action === 'view') {
-      // Keep "View" pointing to the static folder to open in a new tab
       const viewUrl = `${BACKEND_URL}${doc.file_path}`;
       window.open(viewUrl, '_blank');
     } else if (action === 'download') {
-      // Point "Download" to our new API endpoint
-      // We use the actual filename from the DB (e.g., file-123.png)
       const downloadUrl = `${BACKEND_URL}/api/documents/download/${doc.file_name}`;
-
-      // We open this in a hidden way or just use window.location
       window.location.href = downloadUrl;
     }
   };
@@ -116,6 +121,36 @@ const DocumentMngmt = () => {
           </div>
         </div>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div style={{
+          background: '#fee2e2',
+          border: '1px solid #f87171',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          margin: '12px 0',
+          color: '#991b1b',
+          fontSize: '14px'
+        }}>
+          <strong>Error loading documents:</strong> {error}
+          <button
+            onClick={loadDocuments}
+            style={{
+              marginLeft: '12px',
+              padding: '4px 10px',
+              background: '#991b1b',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '13px'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="document-repo card">
         <h3>Document Repository</h3>
@@ -185,7 +220,11 @@ const DocumentMngmt = () => {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="10">No documents found.</td></tr>
+                <tr>
+                  <td colSpan="10">
+                    {error ? 'Failed to load documents.' : 'No documents found.'}
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
