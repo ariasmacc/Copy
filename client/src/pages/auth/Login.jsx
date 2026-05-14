@@ -18,7 +18,8 @@ const Login = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [modalSuccess, setModalSuccess] = useState('');
 
-  const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
+
+  const API_BASE_URL = 'https://bright-final-deploy-production.up.railway.app/api'; 
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +28,6 @@ const Login = () => {
     
     try {
         // 🟢 IN-UPDATE ANG FETCH URL
-        const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
         const response = await fetch(`${API_BASE_URL}/users/login`, {
             method: 'POST',
             headers: {
@@ -138,7 +138,7 @@ const Login = () => {
               </button>
               {isDropdownOpen && (
                 <ul className="signup-dropdown-menu" style={{ display: 'block' }}>
-                  <li onClick={() => { setRole('Admin'); setIsDropdownOpen(false); }}>Administratoristrator</li>
+                  <li onClick={() => { setRole('Admin'); setIsDropdownOpen(false); }}>Administrator</li>
                   <li onClick={() => { setRole('Validator'); setIsDropdownOpen(false); }}>Validator</li>
                 </ul>
               )}
