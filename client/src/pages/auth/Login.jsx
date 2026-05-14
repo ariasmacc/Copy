@@ -8,7 +8,7 @@ const Login = () => {
   
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('Admin');
+  const [role, setRole] = useState('Administrator');
   const [showPassword, setShowPassword] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -133,11 +133,11 @@ const Login = () => {
             <label>Role</label>
             <div className="signup-custom-dropdown">
               <button type="button" className="signup-dropdown-toggle" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-                {role === 'Admin' ? 'Administrator' : 'Validator'} <span className="signup-arrow">▼</span>
+                {role === 'Administrator' ? 'Administratoristrator' : 'Validator'} <span className="signup-arrow">▼</span>
               </button>
               {isDropdownOpen && (
                 <ul className="signup-dropdown-menu" style={{ display: 'block' }}>
-                  <li onClick={() => { setRole('Admin'); setIsDropdownOpen(false); }}>Administrator</li>
+                  <li onClick={() => { setRole('Administrator'); setIsDropdownOpen(false); }}>Administratoristrator</li>
                   <li onClick={() => { setRole('Validator'); setIsDropdownOpen(false); }}>Validator</li>
                 </ul>
               )}
