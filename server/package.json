@@ -1,0 +1,31 @@
+{
+  "name": "bright",
+  "version": "1.0.0",
+  "description": "Budget Management System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "init-db": "node config/initDatabase.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "express-validator": "^7.0.1",
+    "json-2-csv": "^5.5.9",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^8.0.5",
+    "sequelize": "^6.37.7",
+    "sqlite3": "^6.0.1"
+  },
+  "script": {
+    "start": "node server.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
