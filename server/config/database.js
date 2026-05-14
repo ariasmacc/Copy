@@ -4,21 +4,22 @@ const path = require('path');
 const fs = require('fs');
 
 /**
- * --- IMPROVED MIGRATION LOGIC ---
- * Sinisiguro nito na gawa muna ang table bago mag-ALTER.
+ * --- FINAL CORRECTED MIGRATION LOGIC ---
+ * Sinisiguro nito ang tamang order ng table creation at column updates.
  */
 function runMigrations(db) {
   db.serialize(() => {
     console.log("🛠️  Running database migrations...");
 
-    // 1. Create Users Table if it doesn't exist
+    // 1. Siguraduhin na gawa ang Users table (kasama ang 'status' column para sa fresh setup)
     db.run(`
       CREATE TABLE IF NOT EXISTS Users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT NOT NULL,
-        email TEXT
+        email TEXT,
+        status TEXT DEFAULT 'active'
       );
     `, (err) => {
       if (err) {
@@ -27,29 +28,24 @@ function runMigrations(db) {
       }
       console.log("✅ Users table is ready.");
 
-      // 2. Add two_fa_code column
-      db.run(`ALTER TABLE Users ADD COLUMN two_fa_code TEXT;`, (err) => {
-        if (err) {
-          if (err.message.includes("duplicate column name")) {
-            // Normal ito kung nandyan na yung column, dedma na.
-          } else {
-            console.error("Migration Error (two_fa_code):", err.message);
-          }
-        } else {
-          console.log("✅ Migration: Added two_fa_code column.");
+      // 2. Migration: Add 'status' column (para sa mga existing DB na luma ang schema)
+      db.run(`ALTER TABLE Users ADD COLUMN status TEXT DEFAULT 'active';`, (err) => {
+        if (err && !err.message.includes("duplicate column name")) {
+          console.error("Migration Error (status):", err.message);
         }
       });
 
-      // 3. Add two_fa_expires column
+      // 3. Migration: Add 'two_fa_code'
+      db.run(`ALTER TABLE Users ADD COLUMN two_fa_code TEXT;`, (err) => {
+        if (err && !err.message.includes("duplicate column name")) {
+          console.error("Migration Error (two_fa_code):", err.message);
+        }
+      });
+
+      // 4. Migration: Add 'two_fa_expires'
       db.run(`ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME;`, (err) => {
-        if (err) {
-          if (err.message.includes("duplicate column name")) {
-            // Normal din ito.
-          } else {
-            console.error("Migration Error (two_fa_expires):", err.message);
-          }
-        } else {
-          console.log("✅ Migration: Added two_fa_expires column.");
+        if (err && !err.message.includes("duplicate column name")) {
+          console.error("Migration Error (two_fa_expires):", err.message);
         }
       });
     });
@@ -58,6 +54,7 @@ function runMigrations(db) {
 
 console.log("--- DATABASE SETUP STARTED ---");
 
+// Path resolution para sa Railway at Local
 const CODE_DB_PATH = path.resolve(__dirname, '..', 'data', 'BRIGHTDatabase.db');
 const VOLUME_FOLDER = '/app/data'; 
 const VOLUME_DB_PATH = path.join(VOLUME_FOLDER, 'BRIGHTDatabase.db');
@@ -65,7 +62,6 @@ const VOLUME_DB_PATH = path.join(VOLUME_FOLDER, 'BRIGHTDatabase.db');
 let dbPath;
 const isRailway = process.env.NODE_ENV === 'production';
 
-// Logic para sa Railway Volume management
 if (isRailway || fs.existsSync(VOLUME_FOLDER)) {
     console.log("✅ Volume/Production environment detected.");
 
@@ -102,12 +98,11 @@ const db = new sqlite3.Database(dbPath, (err) => {
   } else {
     console.log('✅ Connected to SQLite database.');
     
-    // Enable foreign keys for data integrity
     db.exec('PRAGMA foreign_keys = ON;', (err) => {
       if (err) console.error("Could not enable foreign keys:", err.message);
     });
     
-    // Run the migrations
+    // Execute the migration logic
     runMigrations(db); 
   }
 });
