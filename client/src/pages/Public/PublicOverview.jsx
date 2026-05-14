@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,19 +10,9 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const PublicOverview = () => {
-  // FIX: Use relative path for production or get from env
-  const API_BASE_URL = '/api/public'; 
-
   const [summary, setSummary] = useState({
     totalBudget: 0,
     totalSpent: 0,
@@ -36,64 +26,97 @@ const PublicOverview = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // FIX: Add error handling for each fetch
-        const summaryRes = await fetch(`${API_BASE_URL}/overview/summary`);
-        if (!summaryRes.ok) throw new Error(`Summary fetch failed: ${summaryRes.statusText}`);
-        const summaryData = await summaryRes.json();
-        
-        const total = summaryData.totalBudget || 0;
-        const spent = summaryData.totalSpent || 0;
-        setSummary({
-          totalBudget: total,
-          totalSpent: spent,
-          remaining: total - spent,
-          percentage: total > 0 ? ((spent / total) * 100).toFixed(0) : 0
-        });
-
-        // FIX: Fetch transactions with error handling
-        const txRes = await fetch(`${API_BASE_URL}/transactions`);
-        if (txRes.ok) {
-          const txData = await txRes.json();
-          setTransactions(Array.isArray(txData) ? txData.slice(0, 5) : []);
-        }
-
-        // FIX: Fetch both utilization and trend simultaneously
-        const [utilRes, trendRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/overview/utilization`),
-          fetch(`${API_BASE_URL}/overview/spending-trend`)
-        ]);
-
-        if (utilRes.ok) {
-          const utilData = await utilRes.json();
-          setUtilization(Array.isArray(utilData) ? utilData : []);
-        }
-        
-        if (trendRes.ok) {
-          const trendData = await trendRes.json();
-          setTrend(Array.isArray(trendData) ? trendData : []);
-        }
-
-      } catch (err) {
-        console.error('Error loading dashboard data:', err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
     
-    // FIX: Add auto-refresh every 30 seconds for real-time updates
+    // Auto-refresh every 30 seconds
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // FIX: Safe chart data with fallbacks
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      console.log('Fetching public overview data...');
+      
+      // Fetch summary
+      const summaryRes = await fetch('/api/public/overview/summary', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'omit' // No cookies needed for public routes
+      });
+
+      console.log('Summary response status:', summaryRes.status);
+      console.log('Summary content-type:', summaryRes.headers.get('content-type'));
+
+      // Check if response is JSON
+      const contentType = summaryRes.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await summaryRes.text();
+        console.error('Non-JSON response:', text.substring(0, 200));
+        throw new Error('Server returned HTML instead of JSON. Please check if the backend is properly configured.');
+      }
+
+      if (!summaryRes.ok) {
+        throw new Error(`Server error: ${summaryRes.status} ${summaryRes.statusText}`);
+      }
+
+      const summaryData = await summaryRes.json();
+      console.log('Summary data:', summaryData);
+      
+      const total = summaryData.totalBudget || 0;
+      const spent = summaryData.totalSpent || 0;
+      setSummary({
+        totalBudget: total,
+        totalSpent: spent,
+        remaining: total - spent,
+        percentage: total > 0 ? ((spent / total) * 100).toFixed(0) : 0
+      });
+
+      // Fetch other data in parallel
+      const [txRes, utilRes, trendRes] = await Promise.all([
+        fetch('/api/public/transactions', {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'omit'
+        }),
+        fetch('/api/public/overview/utilization', {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'omit'
+        }),
+        fetch('/api/public/overview/spending-trend', {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'omit'
+        })
+      ]);
+
+      if (txRes.ok) {
+        const txData = await txRes.json();
+        setTransactions(Array.isArray(txData) ? txData.slice(0, 5) : []);
+      }
+
+      if (utilRes.ok) {
+        const utilData = await utilRes.json();
+        setUtilization(Array.isArray(utilData) ? utilData : []);
+      }
+
+      if (trendRes.ok) {
+        const trendData = await trendRes.json();
+        setTrend(Array.isArray(trendData) ? trendData : []);
+      }
+
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Chart configurations
   const categoryChartData = {
     labels: utilization.length > 0 ? utilization.map(c => c.category || 'Unknown') : ['No Data'],
     datasets: [{
@@ -108,9 +131,9 @@ const PublicOverview = () => {
   const trendChartData = {
     labels: trend.length > 0 ? trend.map(d => {
       try {
-        return new Date(d.month + '-02').toLocaleString('default', { month: 'short' });
+        return new Date(d.month + '-01').toLocaleString('default', { month: 'short' });
       } catch {
-        return d.month || 'Unknown';
+        return d.month || '?';
       }
     }) : ['No Data'],
     datasets: [{
@@ -159,7 +182,38 @@ const PublicOverview = () => {
       <main className="dashboard">
         <div className="public-budget">
           <h1>Public Budget Dashboard</h1>
-          <p className="subtitle" style={{ color: 'red' }}>Error loading dashboard: {error}</p>
+          <div style={{
+            background: '#ffebee',
+            border: '1px solid #ffcdd2',
+            borderRadius: '8px',
+            padding: '20px',
+            margin: '20px 0'
+          }}>
+            <h3 style={{color: '#c62828', marginTop: 0}}>⚠️ Unable to Load Dashboard</h3>
+            <p style={{color: '#c62828'}}>{error}</p>
+            <div style={{background: '#fff', padding: '15px', borderRadius: '4px', margin: '15px 0'}}>
+              <strong>Troubleshooting:</strong>
+              <ol style={{marginBottom: 0}}>
+                <li>Check if the backend server is running</li>
+                <li>Verify that public API routes are configured</li>
+                <li>Try accessing <a href="/api/debug" target="_blank">/api/debug</a> to check database</li>
+                <li>Check browser console for network errors</li>
+              </ol>
+            </div>
+            <button 
+              onClick={fetchData}
+              style={{
+                background: '#2c3e50',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Retry Loading
+            </button>
+          </div>
         </div>
       </main>
     );
@@ -174,19 +228,19 @@ const PublicOverview = () => {
         <section className="summary-cards">
           <div className="over-card">
             <h3>Total Budget</h3>
-            <p className="amount">₱<span id="total-budget">{summary.totalBudget.toLocaleString()}</span></p>
+            <p className="amount">₱<span>{summary.totalBudget.toLocaleString()}</span></p>
             <small>Allocated across all categories</small>
           </div>
 
           <div className="over-card">
             <h3>Total Spent</h3>
-            <p className="amount highlight">₱<span id="total-spent">{summary.totalSpent.toLocaleString()}</span></p>
-            <small><span id="budget-percentage">{summary.percentage}%</span> of total budget</small>
+            <p className="amount highlight">₱<span>{summary.totalSpent.toLocaleString()}</span></p>
+            <small><span>{summary.percentage}%</span> of total budget</small>
           </div>
 
           <div className="over-card">
             <h3>Remaining</h3>
-            <p className="amount green">₱<span id="remaining">{summary.remaining.toLocaleString()}</span></p>
+            <p className="amount green">₱<span>{summary.remaining.toLocaleString()}</span></p>
             <small>Available for future expenses</small>
           </div>
         </section>
@@ -196,7 +250,7 @@ const PublicOverview = () => {
             <h3>Budget Allocation by Category</h3>
             <p className="subtitle">Current spending vs allocated amounts</p>
             <div style={{ height: '300px' }}>
-              <Bar data={categoryChartData} options={chartOptions} id="budgetCategoryChart" />
+              <Bar data={categoryChartData} options={chartOptions} />
             </div>
           </div>
 
@@ -204,7 +258,7 @@ const PublicOverview = () => {
             <h3>Monthly Spending Trend</h3>
             <p className="subtitle">Spending patterns over the last 6 months</p>
             <div style={{ height: '300px' }}>
-              <Bar data={trendChartData} options={chartOptions} id="monthlySpendingChart" />
+              <Bar data={trendChartData} options={chartOptions} />
             </div>
           </div>
         </section>
@@ -215,7 +269,7 @@ const PublicOverview = () => {
             <p className="subtitle">Progress towards budget limits</p>
             <div id="budgetContainer">
               {utilization.length === 0 ? (
-                <p>No budget utilization data available</p>
+                <p>No budget data available</p>
               ) : (
                 utilization.map((cat, index) => {
                   const percentage = cat.totalAllocated > 0 
@@ -224,7 +278,7 @@ const PublicOverview = () => {
                   return (
                     <div className="budget-item" key={index}>
                       <div className="budget-details">
-                        <span>{cat.category || 'Unknown'}</span>
+                        <span>{cat.category}</span>
                         <span>₱{(cat.totalSpent || 0).toLocaleString()} / ₱{(cat.totalAllocated || 0).toLocaleString()}</span>
                       </div>
                       <div className="progress-bar-container">
@@ -248,8 +302,8 @@ const PublicOverview = () => {
                   <div className="transaction-item" key={index}>
                     <div className={`icon ${(tx.type || '').toLowerCase()}`}></div>
                     <div className="details">
-                      <strong>{tx.type || 'N/A'}: {tx.name_or_vendor || 'N/A'}</strong>
-                      <small>{tx.category || 'N/A'} • {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : 'N/A'}</small>
+                      <strong>{tx.type}: {tx.name_or_vendor}</strong>
+                      <small>{tx.category} • {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : ''}</small>
                     </div>
                     <div className="amount">₱{(tx.amount || 0).toLocaleString()}</div>
                   </div>
