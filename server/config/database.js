@@ -3,53 +3,76 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
-// --- NEW MIGRATION FUNCTION ---
+/**
+ * --- IMPROVED MIGRATION LOGIC ---
+ * Sinisiguro nito na gawa muna ang table bago mag-ALTER.
+ */
 function runMigrations(db) {
-  // Migration 1: Add two_fa_code
-  db.run(`
-    ALTER TABLE Users ADD COLUMN two_fa_code TEXT;
-  `, (err) => {
-    if (err && err.message && !err.message.includes("duplicate column name")) {
-      console.error("Migration Error (two_fa_code):", err.message);
-    } else if (!err) {
-      console.log("✅ Migration: Added two_fa_code column to Users.");
-    }
-  });
-  
-  // Migration 2: Add two_fa_expires
-  db.run(`
-    ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME;
-  `, (err) => {
-    if (err && err.message && !err.message.includes("duplicate column name")) {
-      console.error("Migration Error (two_fa_expires):", err.message);
-    } else if (!err) {
-      console.log("✅ Migration: Added two_fa_expires column to Users.");
-    }
+  db.serialize(() => {
+    console.log("🛠️  Running database migrations...");
+
+    // 1. Create Users Table if it doesn't exist
+    db.run(`
+      CREATE TABLE IF NOT EXISTS Users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL,
+        email TEXT
+      );
+    `, (err) => {
+      if (err) {
+        console.error("❌ Error creating Users table:", err.message);
+        return;
+      }
+      console.log("✅ Users table is ready.");
+
+      // 2. Add two_fa_code column
+      db.run(`ALTER TABLE Users ADD COLUMN two_fa_code TEXT;`, (err) => {
+        if (err) {
+          if (err.message.includes("duplicate column name")) {
+            // Normal ito kung nandyan na yung column, dedma na.
+          } else {
+            console.error("Migration Error (two_fa_code):", err.message);
+          }
+        } else {
+          console.log("✅ Migration: Added two_fa_code column.");
+        }
+      });
+
+      // 3. Add two_fa_expires column
+      db.run(`ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME;`, (err) => {
+        if (err) {
+          if (err.message.includes("duplicate column name")) {
+            // Normal din ito.
+          } else {
+            console.error("Migration Error (two_fa_expires):", err.message);
+          }
+        } else {
+          console.log("✅ Migration: Added two_fa_expires column.");
+        }
+      });
+    });
   });
 }
-// -----------------------------
 
 console.log("--- DATABASE SETUP STARTED ---");
 
-// 1. Define the paths
 const CODE_DB_PATH = path.resolve(__dirname, '..', 'data', 'BRIGHTDatabase.db');
 const VOLUME_FOLDER = '/app/data'; 
 const VOLUME_DB_PATH = path.join(VOLUME_FOLDER, 'BRIGHTDatabase.db');
 
 let dbPath;
-
-// 2. Check if we are running on Railway using NODE_ENV
 const isRailway = process.env.NODE_ENV === 'production';
 
+// Logic para sa Railway Volume management
 if (isRailway || fs.existsSync(VOLUME_FOLDER)) {
     console.log("✅ Volume/Production environment detected.");
 
-    // Ensure volume folder exists
     if (!fs.existsSync(VOLUME_FOLDER)) {
         fs.mkdirSync(VOLUME_FOLDER, { recursive: true });
     }
 
-    // --- SAFE LOGIC: Only copy if missing ---
     if (!fs.existsSync(VOLUME_DB_PATH)) {
         console.log("⚠️ Database NOT found in Volume. Seeding from code...");
         if (fs.existsSync(CODE_DB_PATH)) {
@@ -59,12 +82,12 @@ if (isRailway || fs.existsSync(VOLUME_FOLDER)) {
             } catch (err) {
                 console.error("❌ ERROR: Failed to copy database file:", err);
             }
+        } else {
+            console.log("ℹ️ No source DB in /data/ to copy. Creating a fresh one.");
         }
     } else {
         console.log("✅ Existing database found in Volume. Using it.");
     }
-    // ----------------------------------------
-
     dbPath = VOLUME_DB_PATH;
 } else {
     console.log("ℹ️ Local environment. Using local file.");
@@ -78,13 +101,14 @@ const db = new sqlite3.Database(dbPath, (err) => {
     console.error('❌ FATAL ERROR opening database:', err.message);
   } else {
     console.log('✅ Connected to SQLite database.');
+    
+    // Enable foreign keys for data integrity
     db.exec('PRAGMA foreign_keys = ON;', (err) => {
       if (err) console.error("Could not enable foreign keys:", err.message);
     });
     
-    // --- CRITICAL: RUN MIGRATIONS HERE ---
+    // Run the migrations
     runMigrations(db); 
-    // -------------------------------------
   }
 });
 
