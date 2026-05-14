@@ -41,36 +41,26 @@ let dbPath;
 // 2. Check if we are running on Railway using NODE_ENV
 const isRailway = process.env.NODE_ENV === 'production';
 
-if (isRailway || fs.existsSync(VOLUME_FOLDER)) {
-    console.log("✅ Volume/Production environment detected.");
+// --- FORCE SEED LOGIC ---
+if (fs.existsSync(VOLUME_FOLDER)) {
+    console.log("✅ Volume folder found.");
 
-    // Ensure volume folder exists
-    if (!fs.existsSync(VOLUME_FOLDER)) {
-        fs.mkdirSync(VOLUME_FOLDER, { recursive: true });
-    }
-
-    // --- SAFE LOGIC: Only copy if missing ---
-    if (!fs.existsSync(VOLUME_DB_PATH)) {
-        console.log("⚠️ Database NOT found in Volume. Seeding from code...");
-        if (fs.existsSync(CODE_DB_PATH)) {
-            try {
-                fs.copyFileSync(CODE_DB_PATH, VOLUME_DB_PATH);
-                console.log("✅ SUCCESS: Copied initial database to Volume.");
-            } catch (err) {
-                console.error("❌ ERROR: Failed to copy database file:", err);
-            }
+    if (fs.existsSync(CODE_DB_PATH)) {
+        try {
+            console.log("🔄 Force copying database from code to Volume...");
+            fs.copyFileSync(CODE_DB_PATH, VOLUME_DB_PATH);
+            console.log("✅ SUCCESS: Database forcefully synced to Volume.");
+        } catch (err) {
+            console.error("❌ ERROR: Failed to force copy database:", err);
         }
     } else {
-        console.log("✅ Existing database found in Volume. Using it.");
+        console.error("❌ ERROR: Hindi mahanap ang database file sa VS Code (server/data/)!");
     }
-    // ----------------------------------------
 
     dbPath = VOLUME_DB_PATH;
 } else {
-    console.log("ℹ️ Local environment. Using local file.");
     dbPath = CODE_DB_PATH;
 }
-
 console.log("📂 Final Database Path:", dbPath);
 
 const db = new sqlite3.Database(dbPath, (err) => {
