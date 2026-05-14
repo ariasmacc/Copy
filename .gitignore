@@ -8,7 +8,7 @@ client/node_modules/
 # Databases (Prevent overwriting your local DB on GitHub)
 *.sqlite
 
-# Build folders
+# Build foldersgit add .
 dist/
 client/dist/
 
