@@ -3,15 +3,11 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
-/**
- * --- FINAL CORRECTED MIGRATION LOGIC ---
- * Sinisiguro nito ang tamang order ng table creation at column updates.
- */
 function runMigrations(db) {
   db.serialize(() => {
     console.log("🛠️  Running database migrations...");
 
-    // 1. Siguraduhin na gawa ang Users table (kasama ang 'status' column para sa fresh setup)
+    // 1. Gawa muna ang Users table
     db.run(`
       CREATE TABLE IF NOT EXISTS Users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,33 +24,38 @@ function runMigrations(db) {
       }
       console.log("✅ Users table is ready.");
 
-      // 2. Migration: Add 'status' column (para sa mga existing DB na luma ang schema)
-      db.run(`ALTER TABLE Users ADD COLUMN status TEXT DEFAULT 'active';`, (err) => {
-        if (err && !err.message.includes("duplicate column name")) {
-          console.error("Migration Error (status):", err.message);
-        }
-      });
+      // 2. Patakbuhin ang ALTER columns (status, 2FA, etc.)
+      // Note: Kahit nandun na sa CREATE TABLE, kailangan ito para sa mga existing DB files.
+      db.run(`ALTER TABLE Users ADD COLUMN status TEXT DEFAULT 'active';`, () => {});
+      db.run(`ALTER TABLE Users ADD COLUMN two_fa_code TEXT;`, () => {});
+      db.run(`ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME;`, () => {
+        
+        // --- 3. SEEDING LOGIC: Dito dapat sa dulo para siguradong may table at columns na ---
+        db.get("SELECT COUNT(*) AS count FROM Users", (err, row) => {
+          if (row && row.count === 0) {
+            console.log("⚠️  Empty Users table. Seeding default admin...");
+            
+            const defaultUser = 'SEAdmin';
+            const defaultPass = 'password123'; // TANDAAN: Kung hashed dapat ang pass sa code mo, i-hash mo muna ito.
+            const defaultRole = 'Administrator';
 
-      // 3. Migration: Add 'two_fa_code'
-      db.run(`ALTER TABLE Users ADD COLUMN two_fa_code TEXT;`, (err) => {
-        if (err && !err.message.includes("duplicate column name")) {
-          console.error("Migration Error (two_fa_code):", err.message);
-        }
-      });
-
-      // 4. Migration: Add 'two_fa_expires'
-      db.run(`ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME;`, (err) => {
-        if (err && !err.message.includes("duplicate column name")) {
-          console.error("Migration Error (two_fa_expires):", err.message);
-        }
+            db.run(`
+              INSERT INTO Users (username, password, role, status) 
+              VALUES (?, ?, ?, 'active')
+            `, [defaultUser, defaultPass, defaultRole], (err) => {
+              if (err) console.error("❌ Seed Error:", err.message);
+              else console.log(`✅ Default user '${defaultUser}' created successfully!`);
+            });
+          }
+        });
       });
     });
   });
 }
 
+// --- REST OF YOUR DATABASE SETUP CODE ---
 console.log("--- DATABASE SETUP STARTED ---");
 
-// Path resolution para sa Railway at Local
 const CODE_DB_PATH = path.resolve(__dirname, '..', 'data', 'BRIGHTDatabase.db');
 const VOLUME_FOLDER = '/app/data'; 
 const VOLUME_DB_PATH = path.join(VOLUME_FOLDER, 'BRIGHTDatabase.db');
@@ -63,46 +64,24 @@ let dbPath;
 const isRailway = process.env.NODE_ENV === 'production';
 
 if (isRailway || fs.existsSync(VOLUME_FOLDER)) {
-    console.log("✅ Volume/Production environment detected.");
-
-    if (!fs.existsSync(VOLUME_FOLDER)) {
-        fs.mkdirSync(VOLUME_FOLDER, { recursive: true });
-    }
+    if (!fs.existsSync(VOLUME_FOLDER)) fs.mkdirSync(VOLUME_FOLDER, { recursive: true });
 
     if (!fs.existsSync(VOLUME_DB_PATH)) {
-        console.log("⚠️ Database NOT found in Volume. Seeding from code...");
         if (fs.existsSync(CODE_DB_PATH)) {
-            try {
-                fs.copyFileSync(CODE_DB_PATH, VOLUME_DB_PATH);
-                console.log("✅ SUCCESS: Copied initial database to Volume.");
-            } catch (err) {
-                console.error("❌ ERROR: Failed to copy database file:", err);
-            }
-        } else {
-            console.log("ℹ️ No source DB in /data/ to copy. Creating a fresh one.");
+            try { fs.copyFileSync(CODE_DB_PATH, VOLUME_DB_PATH); } 
+            catch (err) { console.error("❌ Failed to copy DB:", err); }
         }
-    } else {
-        console.log("✅ Existing database found in Volume. Using it.");
     }
     dbPath = VOLUME_DB_PATH;
 } else {
-    console.log("ℹ️ Local environment. Using local file.");
     dbPath = CODE_DB_PATH;
 }
 
-console.log("📂 Final Database Path:", dbPath);
-
 const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('❌ FATAL ERROR opening database:', err.message);
-  } else {
+  if (err) console.error('❌ FATAL ERROR opening database:', err.message);
+  else {
     console.log('✅ Connected to SQLite database.');
-    
-    db.exec('PRAGMA foreign_keys = ON;', (err) => {
-      if (err) console.error("Could not enable foreign keys:", err.message);
-    });
-    
-    // Execute the migration logic
+    db.exec('PRAGMA foreign_keys = ON;');
     runMigrations(db); 
   }
 });
