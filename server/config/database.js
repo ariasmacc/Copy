@@ -1,6 +1,4 @@
 // config/database.js
-//hey
-
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
@@ -11,7 +9,6 @@ function runMigrations(db) {
   db.run(`
     ALTER TABLE Users ADD COLUMN two_fa_code TEXT;
   `, (err) => {
-    // Ignore the error if the column already exists ("duplicate column name")
     if (err && err.message && !err.message.includes("duplicate column name")) {
       console.error("Migration Error (two_fa_code):", err.message);
     } else if (!err) {
@@ -23,7 +20,6 @@ function runMigrations(db) {
   db.run(`
     ALTER TABLE Users ADD COLUMN two_fa_expires DATETIME;
   `, (err) => {
-    // Ignore the error if the column already exists ("duplicate column name")
     if (err && err.message && !err.message.includes("duplicate column name")) {
       console.error("Migration Error (two_fa_expires):", err.message);
     } else if (!err) {
@@ -33,18 +29,25 @@ function runMigrations(db) {
 }
 // -----------------------------
 
+console.log("--- DATABASE SETUP STARTED ---");
+
 // 1. Define the paths
-const CODE_DB_PATH = path.resolve(__dirname, '..', 'data', 'BRIGHTDatabase.db'); //changed
+const CODE_DB_PATH = path.resolve(__dirname, '..', 'data', 'BRIGHTDatabase.db');
 const VOLUME_FOLDER = '/app/data'; 
-const VOLUME_DB_PATH = path.join(VOLUME_FOLDER, 'BRIGHTDatabase.db'); //changed
+const VOLUME_DB_PATH = path.join(VOLUME_FOLDER, 'BRIGHTDatabase.db');
 
 let dbPath;
 
-console.log("--- DATABASE SETUP STARTED ---");
+// 2. Check if we are running on Railway using NODE_ENV
+const isRailway = process.env.NODE_ENV === 'production';
 
-// 2. Check if we are running on Railway
-if (fs.existsSync(VOLUME_FOLDER)) {
-    console.log("✅ Volume folder found. Running in Production/Railway.");
+if (isRailway || fs.existsSync(VOLUME_FOLDER)) {
+    console.log("✅ Volume/Production environment detected.");
+
+    // Ensure volume folder exists
+    if (!fs.existsSync(VOLUME_FOLDER)) {
+        fs.mkdirSync(VOLUME_FOLDER, { recursive: true });
+    }
 
     // --- SAFE LOGIC: Only copy if missing ---
     if (!fs.existsSync(VOLUME_DB_PATH)) {
@@ -63,13 +66,12 @@ if (fs.existsSync(VOLUME_FOLDER)) {
     // ----------------------------------------
 
     dbPath = VOLUME_DB_PATH;
-
 } else {
-    console.log("ℹ️ Volume folder NOT found. Using local file.");
+    console.log("ℹ️ Local environment. Using local file.");
     dbPath = CODE_DB_PATH;
 }
 
-console.log("Final Database Path:", dbPath);
+console.log("📂 Final Database Path:", dbPath);
 
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
