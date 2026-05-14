@@ -133,7 +133,7 @@ const Login = () => {
             <label>Role</label>
             <div className="signup-custom-dropdown">
               <button type="button" className="signup-dropdown-toggle" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-                {role === 'Admin' ? 'Administratoristrator' : 'Validator'} <span className="signup-arrow">▼</span>
+                {role === 'Admin' ? 'Administrator' : 'Validator'} <span className="signup-arrow">▼</span>
               </button>
               {isDropdownOpen && (
                 <ul className="signup-dropdown-menu" style={{ display: 'block' }}>
