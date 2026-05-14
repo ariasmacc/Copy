@@ -10,7 +10,6 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
-// Register ChartJS components | Use npm install chart.js react-chartjs-2 para gumana
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -21,9 +20,9 @@ ChartJS.register(
 );
 
 const PublicOverview = () => {
+  // FIX: Use relative path for production or get from env
   const API_BASE_URL = '/api/public'; 
 
-  // State for data
   const [summary, setSummary] = useState({
     totalBudget: 0,
     totalSpent: 0,
@@ -33,55 +32,73 @@ const PublicOverview = () => {
   const [transactions, setTransactions] = useState([]);
   const [utilization, setUtilization] = useState([]);
   const [trend, setTrend] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch Data on Mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Fetch Summary
+        setIsLoading(true);
+        setError(null);
+        
+        // FIX: Add error handling for each fetch
         const summaryRes = await fetch(`${API_BASE_URL}/overview/summary`);
-        if (summaryRes.ok) {
-          const data = await summaryRes.json();
-          const total = data.totalBudget || 0;
-          const spent = data.totalSpent || 0;
-          setSummary({
-            totalBudget: total,
-            totalSpent: spent,
-            remaining: total - spent,
-            percentage: total > 0 ? ((spent / total) * 100).toFixed(0) : 0
-          });
-        }
+        if (!summaryRes.ok) throw new Error(`Summary fetch failed: ${summaryRes.statusText}`);
+        const summaryData = await summaryRes.json();
+        
+        const total = summaryData.totalBudget || 0;
+        const spent = summaryData.totalSpent || 0;
+        setSummary({
+          totalBudget: total,
+          totalSpent: spent,
+          remaining: total - spent,
+          percentage: total > 0 ? ((spent / total) * 100).toFixed(0) : 0
+        });
 
-        // 2. Fetch Transactions
+        // FIX: Fetch transactions with error handling
         const txRes = await fetch(`${API_BASE_URL}/transactions`);
         if (txRes.ok) {
           const txData = await txRes.json();
-          setTransactions(txData.slice(0, 5));
+          setTransactions(Array.isArray(txData) ? txData.slice(0, 5) : []);
         }
 
-        // 3. Fetch Dashboard Data (Utilization and Trend)
+        // FIX: Fetch both utilization and trend simultaneously
         const [utilRes, trendRes] = await Promise.all([
           fetch(`${API_BASE_URL}/overview/utilization`),
           fetch(`${API_BASE_URL}/overview/spending-trend`)
         ]);
 
-        if (utilRes.ok) setUtilization(await utilRes.json());
-        if (trendRes.ok) setTrend(await trendRes.json());
+        if (utilRes.ok) {
+          const utilData = await utilRes.json();
+          setUtilization(Array.isArray(utilData) ? utilData : []);
+        }
+        
+        if (trendRes.ok) {
+          const trendData = await trendRes.json();
+          setTrend(Array.isArray(trendData) ? trendData : []);
+        }
 
       } catch (err) {
         console.error('Error loading dashboard data:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchData();
+    
+    // FIX: Add auto-refresh every 30 seconds for real-time updates
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Chart Data Configurations
+  // FIX: Safe chart data with fallbacks
   const categoryChartData = {
-    labels: utilization.map(c => c.category),
+    labels: utilization.length > 0 ? utilization.map(c => c.category || 'Unknown') : ['No Data'],
     datasets: [{
       label: 'Budget Allocated',
-      data: utilization.map(c => c.totalAllocated),
+      data: utilization.length > 0 ? utilization.map(c => c.totalAllocated || 0) : [0],
       backgroundColor: 'rgba(44, 62, 80, 0.9)',
       borderColor: 'rgba(44, 62, 80, 1)',
       borderWidth: 1
@@ -89,10 +106,16 @@ const PublicOverview = () => {
   };
 
   const trendChartData = {
-    labels: trend.map(d => new Date(d.month + '-02').toLocaleString('default', { month: 'short' })),
+    labels: trend.length > 0 ? trend.map(d => {
+      try {
+        return new Date(d.month + '-02').toLocaleString('default', { month: 'short' });
+      } catch {
+        return d.month || 'Unknown';
+      }
+    }) : ['No Data'],
     datasets: [{
       label: 'Total Spent',
-      data: trend.map(d => d.totalSpent),
+      data: trend.length > 0 ? trend.map(d => d.totalSpent || 0) : [0],
       backgroundColor: 'rgba(44, 62, 80, 0.9)',
       borderColor: 'rgba(44, 62, 80, 1)',
       borderWidth: 1
@@ -102,9 +125,45 @@ const PublicOverview = () => {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: { y: { beginAtZero: true } }
+    plugins: { 
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context) => `₱${context.parsed.y.toLocaleString()}`
+        }
+      }
+    },
+    scales: { 
+      y: { 
+        beginAtZero: true,
+        ticks: {
+          callback: (value) => `₱${value.toLocaleString()}`
+        }
+      } 
+    }
   };
+
+  if (isLoading) {
+    return (
+      <main className="dashboard">
+        <div className="public-budget">
+          <h1>Public Budget Dashboard</h1>
+          <p className="subtitle">Loading real-time data...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="dashboard">
+        <div className="public-budget">
+          <h1>Public Budget Dashboard</h1>
+          <p className="subtitle" style={{ color: 'red' }}>Error loading dashboard: {error}</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="dashboard">
@@ -129,13 +188,6 @@ const PublicOverview = () => {
             <h3>Remaining</h3>
             <p className="amount green">₱<span id="remaining">{summary.remaining.toLocaleString()}</span></p>
             <small>Available for future expenses</small>
-          </div>
-
-          {/* Validation Status card hidden in public view per original script logic */}
-          <div className="over-card" style={{ display: 'none' }}>
-            <h3>Validation Status</h3>
-            <p className="amount"><span id="validation-count">0</span></p>
-            <small><span id="pending-count">0</span> pending validations</small>
           </div>
         </section>
 
@@ -162,22 +214,26 @@ const PublicOverview = () => {
             <h3>Budget Utilization by Category</h3>
             <p className="subtitle">Progress towards budget limits</p>
             <div id="budgetContainer">
-              {utilization.map((cat, index) => {
-                const percentage = cat.totalAllocated > 0 
-                  ? ((cat.totalSpent / cat.totalAllocated) * 100).toFixed(0) 
-                  : 0;
-                return (
-                  <div className="budget-item" key={index}>
-                    <div className="budget-details">
-                      <span>{cat.category}</span>
-                      <span>₱{cat.totalSpent.toLocaleString()} / ₱{cat.totalAllocated.toLocaleString()}</span>
+              {utilization.length === 0 ? (
+                <p>No budget utilization data available</p>
+              ) : (
+                utilization.map((cat, index) => {
+                  const percentage = cat.totalAllocated > 0 
+                    ? ((cat.totalSpent / cat.totalAllocated) * 100).toFixed(0) 
+                    : 0;
+                  return (
+                    <div className="budget-item" key={index}>
+                      <div className="budget-details">
+                        <span>{cat.category || 'Unknown'}</span>
+                        <span>₱{(cat.totalSpent || 0).toLocaleString()} / ₱{(cat.totalAllocated || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="progress-bar-container">
+                        <div className="progress-bar" style={{ width: `${Math.min(percentage, 100)}%` }}></div>
+                      </div>
                     </div>
-                    <div className="progress-bar-container">
-                      <div className="progress-bar" style={{ width: `${percentage}%` }}></div>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </section>
 
@@ -185,16 +241,20 @@ const PublicOverview = () => {
             <h3>Recent Transactions</h3>
             <p className="subtitle">Latest budget activities</p>
             <div id="transactionsContainer">
-              {transactions.map((tx, index) => (
-                <div className="transaction-item" key={index}>
-                  <div className={`icon ${tx.type.toLowerCase()}`}></div>
-                  <div className="details">
-                    <strong>{tx.type}: {tx.name_or_vendor}</strong>
-                    <small>{tx.category} • {new Date(tx.timestamp).toLocaleDateString()}</small>
+              {transactions.length === 0 ? (
+                <p>No recent transactions</p>
+              ) : (
+                transactions.map((tx, index) => (
+                  <div className="transaction-item" key={index}>
+                    <div className={`icon ${(tx.type || '').toLowerCase()}`}></div>
+                    <div className="details">
+                      <strong>{tx.type || 'N/A'}: {tx.name_or_vendor || 'N/A'}</strong>
+                      <small>{tx.category || 'N/A'} • {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : 'N/A'}</small>
+                    </div>
+                    <div className="amount">₱{(tx.amount || 0).toLocaleString()}</div>
                   </div>
-                  <div className="amount">₱{tx.amount.toLocaleString()}</div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </section>
         </section>

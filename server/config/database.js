@@ -1,8 +1,5 @@
 // config/database.js
 
-//hey
-
-
 
 const sqlite3 = require('sqlite3').verbose();
 

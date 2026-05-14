@@ -3,33 +3,46 @@ import React, { useState, useEffect, useMemo } from 'react';
 const PublicTL = () => {
   const [allTransactions, setAllTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   
-  // UI State for dropdowns
   const [isTypeOpen, setIsTypeOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
   const API_BASE_URL = '/api/public'; 
 
-  // 1. Fetch Data on Mount
+  // FIX: Add error handling and auto-refresh
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
         setIsLoading(true);
+        setError(null);
+        
         const res = await fetch(`${API_BASE_URL}/transactions`);
-        if (!res.ok) throw new Error(`Failed to fetch transactions: ${res.statusText}`);
+        
+        if (!res.ok) {
+          throw new Error(`Failed to fetch transactions: ${res.statusText}`);
+        }
+        
         const data = await res.json();
-        setAllTransactions(data);
+        console.log('Transactions loaded:', data); // Debug log
+        setAllTransactions(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Error loading transactions:', err);
+        setError(err.message);
+        setAllTransactions([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchTransactions();
+    
+    // FIX: Add auto-refresh every 30 seconds
+    const interval = setInterval(fetchTransactions, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // 2. Computed Summary Stats

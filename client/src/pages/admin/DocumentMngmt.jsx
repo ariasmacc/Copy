@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 const DocumentMngmt = () => {
   // 1. Point this to your Backend Port
   const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
-  
+  const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
   const [allDocuments, setAllDocuments] = useState([]);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -15,7 +16,7 @@ const DocumentMngmt = () => {
     if (userString) {
       setUser(JSON.parse(userString));
     } else {
-      setUser({ name: 'Admin', role: 'Admin' }); 
+      setUser({ name: 'Admin', role: 'Admin' });
     }
     loadDocuments();
   }, []);
@@ -25,10 +26,10 @@ const DocumentMngmt = () => {
       const res = await fetch(`${API_BASE_URL}/documents`, {
         credentials: 'include'
       });
-      
+
       if (!res.ok) throw new Error('Failed to fetch documents');
       const data = await res.json();
-      
+
       const documentsArray = Array.isArray(data) ? data : [];
       setAllDocuments(documentsArray);
       setFilteredDocuments(documentsArray);
@@ -59,8 +60,6 @@ const DocumentMngmt = () => {
   // FIXED ACTION HANDLER
   // ==========================================
   const handleAction = (action, doc) => {
-    const API_BASE_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
-    
     if (action === 'view') {
       // Keep "View" pointing to the static folder to open in a new tab
       const viewUrl = `${BACKEND_URL}${doc.file_path}`;
@@ -69,7 +68,7 @@ const DocumentMngmt = () => {
       // Point "Download" to our new API endpoint
       // We use the actual filename from the DB (e.g., file-123.png)
       const downloadUrl = `${BACKEND_URL}/api/documents/download/${doc.file_name}`;
-      
+
       // We open this in a hidden way or just use window.location
       window.location.href = downloadUrl;
     }
@@ -86,7 +85,6 @@ const DocumentMngmt = () => {
 
   return (
     <main className="document-management">
-      {/* ... (Your Header and Summary Cards JSX remains the same) ... */}
       <div className="document-managemant-box">
         <div className="header-row">
           <div>
@@ -122,9 +120,9 @@ const DocumentMngmt = () => {
       <div className="document-repo card">
         <h3>Document Repository</h3>
         <div className="search-bar">
-          <input 
-            type="text" 
-            placeholder="Search documents..." 
+          <input
+            type="text"
+            placeholder="Search documents..."
             className="search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -134,12 +132,12 @@ const DocumentMngmt = () => {
         <div className="filter-tabs">
           {filterOptions.map(option => {
             const key = option === 'All' ? 'all' : option;
-            const count = option === 'All' 
-                ? allDocuments.length 
-                : allDocuments.filter(d => d.type === option).length;
-            
+            const count = option === 'All'
+              ? allDocuments.length
+              : allDocuments.filter(d => d.type === option).length;
+
             return (
-              <button 
+              <button
                 key={option}
                 className={activeFilter === key ? 'active' : ''}
                 onClick={() => setActiveFilter(key)}

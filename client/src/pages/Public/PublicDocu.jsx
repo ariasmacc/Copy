@@ -2,58 +2,93 @@ import React, { useState, useEffect } from 'react';
 import '../../index.css';
 
 const PublicDocu = () => {
-  const API_BASE_URL = '/api/public/documents'; // Match your documents.js route
+  const API_BASE_URL = '/api/public/documents';
   
   const [documents, setDocuments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadDocuments();
   }, []);
 
+  // FIX: Complete rewrite of loadDocuments function
   const loadDocuments = async () => {
     setIsLoading(true);
+    setError(null);
+    
     try {
-      // Added BACKEND_URL. No 'auth' needed here as it's a public route
-      const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      if (!res.ok) throw new Error('Failed to fetch documents');
+      // FIX: Actually make the fetch call (was missing in original)
+      const res = await fetch(API_BASE_URL);
+      
+      if (!res.ok) {
+        throw new Error(`Failed to fetch documents: ${res.statusText}`);
+      }
       
       const data = await res.json();
-      // FIX: Removed the empty array overwrite
+      console.log('Documents loaded:', data); // Debug log
+      
+      // FIX: Ensure data is an array
       setDocuments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error loading documents:', err);
+      setError(err.message);
+      setDocuments([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Secure View and Download Logic
+  // FIX: Properly implement view and download actions
   const handleDocumentAction = (action, doc) => {
+    if (!doc) return;
+    
     if (action === 'view') {
-      // Opens the static file in a new tab
-      window.open(`${BACKEND_URL}${doc.file_path}`, '_blank');
+      // View: Open file in new tab using the file path
+      if (doc.file_path) {
+        window.open(doc.file_path, '_blank');
+      } else {
+        alert('File path not available');
+      }
     } else if (action === 'download') {
-      // Triggers our secure backend download route
-      window.location.href = `${API_BASE_URL}/download/${doc.file_name}`;
+      // Download: Trigger download through backend endpoint
+      if (doc.file_name) {
+        // Create an invisible link and click it
+        const link = document.createElement('a');
+        link.href = `${API_BASE_URL}/download/${encodeURIComponent(doc.file_name)}`;
+        link.download = doc.file_name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        alert('File name not available');
+      }
     }
   };
 
-  // Filter logic
+  // Filter logic with null safety
   const filteredDocuments = documents.filter(doc => {
-    const docText = `${doc.file_name} ${doc.description} ${doc.related_transaction}`.toLowerCase();
-    const matchesSearch = docText.includes(searchTerm.toLowerCase());
+    if (!doc) return false;
+    
+    const docText = `${doc.file_name || ''} ${doc.description || ''} ${doc.related_transaction || ''}`.toLowerCase();
+    const matchesSearch = searchTerm === '' || docText.includes(searchTerm.toLowerCase());
     const matchesFilter = activeFilter === 'all' || doc.type === activeFilter;
     return matchesSearch && matchesFilter;
   });
 
+  // Summary calculations with null safety
   const summary = {
     total: documents.length,
-    verified: documents.filter(d => d.status === 'Approved' || d.status === 'Verified').length,
-    pending: documents.filter(d => d.status === 'Pending Review').length,
-    storage: (documents.reduce((acc, d) => acc + (d.size || 0), 0) / 1024).toFixed(2)
+    verified: documents.filter(d => d && (d.status === 'Approved' || d.status === 'Verified')).length,
+    pending: documents.filter(d => d && d.status === 'Pending Review').length,
+    storage: (documents.reduce((acc, d) => acc + (d?.size || 0), 0) / 1024).toFixed(2)
+  };
+
+  // Retry loading
+  const handleRetry = () => {
+    loadDocuments();
   };
 
   return (
@@ -64,6 +99,9 @@ const PublicDocu = () => {
             <h2>Document Management</h2>
             <p className="subtitle">Secure storage and verification of financial documents</p>
           </div>
+          <button onClick={handleRetry} className="btn-secondary" style={{ marginLeft: 'auto' }}>
+            Refresh Documents
+          </button>
         </div>
 
         <div className="docs-grid">
@@ -89,6 +127,19 @@ const PublicDocu = () => {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="error-message" style={{ 
+          background: '#ffebee', 
+          padding: '15px', 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          color: '#c62828'
+        }}>
+          <strong>Error:</strong> {error}
+          <button onClick={handleRetry} style={{ marginLeft: '10px' }}>Retry</button>
+        </div>
+      )}
 
       <div className="document-repo card">
         <h3>Document Repository</h3>
@@ -120,37 +171,66 @@ const PublicDocu = () => {
           <table>
             <thead>
               <tr>
-                <th>Document</th><th>Type</th><th>Size</th><th>Related Transaction</th>
-                <th>Category</th><th>Uploaded By</th><th>Date</th><th>Status</th>
-                <th>Hash</th><th>Actions</th>
+                <th>Document</th>
+                <th>Type</th>
+                <th>Size</th>
+                <th>Related Transaction</th>
+                <th>Category</th>
+                <th>Uploaded By</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Hash</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan="10" style={{ textAlign: 'center' }}>Loading documents...</td></tr>
+                <tr><td colSpan="10" style={{ textAlign: 'center', padding: '20px' }}>
+                  <div className="loading-spinner">Loading documents...</div>
+                </td></tr>
+              ) : error ? (
+                <tr><td colSpan="10" style={{ textAlign: 'center', padding: '20px', color: 'red' }}>
+                  Error loading documents. Click "Refresh Documents" to retry.
+                </td></tr>
               ) : filteredDocuments.length === 0 ? (
-                <tr><td colSpan="10" style={{ textAlign: 'center' }}>No documents found.</td></tr>
+                <tr><td colSpan="10" style={{ textAlign: 'center', padding: '20px' }}>
+                  {documents.length === 0 ? 'No documents found in the system.' : 'No documents match your search criteria.'}
+                </td></tr>
               ) : (
                 filteredDocuments.map((doc, index) => (
-                  <tr key={index}>
+                  <tr key={doc.id || index}>
                     <td className="document-cell">
-                        <strong>{doc.file_name}</strong>
+                      <strong>{doc.file_name || 'Unnamed Document'}</strong>
                     </td>
-                    <td><span className="tag">{doc.type}</span></td>
-                    <td>{doc.size?.toFixed(2)} KB</td>
-                    <td>{doc.related_transaction}</td>
-                    <td>{doc.category}</td>
-                    <td>{doc.uploaded_by}</td>
-                    <td>{new Date(doc.date).toLocaleDateString()}</td>
+                    <td><span className="tag">{doc.type || 'N/A'}</span></td>
+                    <td>{(doc.size || 0).toFixed(2)} KB</td>
+                    <td>{doc.related_transaction || 'N/A'}</td>
+                    <td>{doc.category || 'N/A'}</td>
+                    <td>{doc.uploaded_by || 'N/A'}</td>
+                    <td>{doc.date ? new Date(doc.date).toLocaleDateString() : 'N/A'}</td>
                     <td>
-                      <span className={`status ${doc.status?.toLowerCase().replace(' ', '-')}`}>
-                        {doc.status}
+                      <span className={`status ${(doc.status || '').toLowerCase().replace(/\s+/g, '-')}`}>
+                        {doc.status || 'Unknown'}
                       </span>
                     </td>
-                    <td className="hash">{doc.hash?.substring(0, 10)}...</td>
+                    <td className="hash">{(doc.hash || '').substring(0, 10)}...</td>
                     <td>
-                      <button className="btn" onClick={() => handleDocumentAction('view', doc)} style={{ marginRight: '5px' }}>View</button>
-                      <button className="btn" onClick={() => handleDocumentAction('download', doc)}>Download</button>
+                      <div style={{ display: 'flex', gap: '5px' }}>
+                        <button 
+                          className="btn btn-small" 
+                          onClick={() => handleDocumentAction('view', doc)}
+                          disabled={!doc.file_path}
+                        >
+                          View
+                        </button>
+                        <button 
+                          className="btn btn-small" 
+                          onClick={() => handleDocumentAction('download', doc)}
+                          disabled={!doc.file_name}
+                        >
+                          Download
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
